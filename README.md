@@ -1,6 +1,6 @@
 # NOISECORE
 
-card generator. blood red CRT fever-dream for instagram and tiktok posts.
+card generator for instagram and tiktok posts.
 
 takes a title, body text, and optionally a photo — outputs ready-to-post cards with grain, scanlines, chromatic aberration, and glowing red borders.
 

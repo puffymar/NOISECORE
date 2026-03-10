@@ -153,9 +153,11 @@ def apply_to_photo_region(img, preset="default"):
 
     # Subtle bloom to give the warm-skin-through-red-light feeling
     img = add_bloom(img, radius=3, intensity=0.18)
+    # Recover sharpness lost to bloom
+    img = ImageEnhance.Sharpness(img).enhance(2.2)
 
-    # Very light grain and scanlines — don't destroy detail
-    img = add_scanlines(img, opacity=0.08, spacing=3)
-    img = add_grain(img, intensity=0.04)
+    # Light grain and scanlines
+    img = add_scanlines(img, opacity=0.10, spacing=3)
+    img = add_grain(img, intensity=0.06)
 
     return img

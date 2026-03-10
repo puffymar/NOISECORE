@@ -479,9 +479,10 @@ def build_card(
                       COL_FOOTER_DL, glow_color=(20, 220, 60), glow_radius=5)
 
     # ---- Final card-level filter pass ----
-    card = nf.add_scanlines(card, opacity=0.13, spacing=2)
-    card = nf.add_grain(card, intensity=0.045)
-    card = nf.chromatic_aberration(card, offset=1)
+    card = nf.add_scanlines(card, opacity=0.20, spacing=2)
+    card = nf.add_grain(card, intensity=0.085)
+    card = nf.add_horizontal_glitch(card, num_slices=4, max_offset=6)
+    card = nf.chromatic_aberration(card, offset=2)
 
     return card
 

@@ -79,7 +79,7 @@ def _text_height(draw, text, font):
 COL_BG          = (8, 3, 2)           # near-black with faint warm red cast
 COL_TITLE       = (230, 60, 15)       # orange-red — hot, not pure red
 COL_TITLE_GLOW  = (255, 80, 10)       # glow halo around title
-COL_BODY        = (185, 55, 30)       # body text — slightly darker
+COL_BODY        = (205, 70, 30)       # body text — slightly darker
 COL_BODY_ALT    = (45, 185, 80)       # occasional green accent line
 COL_BORDER      = (190, 40, 15)       # outer card border
 COL_BORDER_GLOW = (255, 70, 15)       # diffuse glow behind border
@@ -374,8 +374,8 @@ def build_card(
     content_top = y_cursor
 
     # ---- Photo inset (right side) ----
-    photo_w    = int(W * 0.40)
-    photo_h    = int(H * 0.36)
+    photo_w    = int(W * 0.44)
+    photo_h    = int(H * 0.50)
     corner_r   = int(min(photo_w, photo_h) * 0.06)
     photo_pad  = int(W * 0.03)   # gap between photo border and card edge
     photo_x    = W - pad - photo_pad - photo_w
@@ -410,8 +410,8 @@ def build_card(
     footer_y    = H - pad * 2 - border_in - int(footer_size * 2.4)
 
     # ---- Body text ----
-    body_size  = int(W * 0.034)
-    font_body  = _load_font(body_size, bold=True)
+    body_size  = int(W * 0.030)
+    font_body  = _load_font(body_size, bold=False)
     _draw      = ImageDraw.Draw(card)
 
     text_left   = pad * 2
@@ -421,8 +421,8 @@ def build_card(
     paragraphs  = [p.strip() for p in body.split("\n") if p.strip()]
     body_y      = content_top
     line_idx    = 0
-    line_lead   = int(body_size * 1.55)
-    para_gap    = int(body_size * 1.0)
+    line_lead   = int(body_size * 1.6)
+    para_gap    = int(body_size * 1.8)
     # Reserve space so body text never bleeds into the footer zone
     max_body_y  = footer_y - int(body_size * 1.5)
 

@@ -20,7 +20,6 @@ NOISECORE/
 ├── CLAUDE.md              # This file — AI assistant guidance
 ├── .gitignore             # Ignores output dirs, pycache, env files
 ├── requirements.txt       # Pillow, numpy
-├── comfy_to_social.py     # CLI entry point — generates cards
 ├── noisecore_filter.py    # Image filter pipeline (grain, scanlines, tint, glow, etc.)
 ├── caption_layout.py      # Card layout engine (title, photo inset, body, footer)
 ├── create_test_image.py   # Generates abstract/silhouette test images (no anime)
@@ -28,7 +27,6 @@ NOISECORE/
 ```
 
 **Output directories (gitignored):**
-- `noisecore/` — default CLI output
 - `test_output/` — test run output
 - `test_images/` — generated test images
 
@@ -87,8 +85,16 @@ Refactor glow rendering into shared helper
 
 - **noisecore_filter.py** is pure image-in/image-out — no layout logic.
 - **caption_layout.py** handles all text/layout composition and calls the filter module.
-- **comfy_to_social.py** is the CLI glue — argument parsing and file I/O only.
+- **test_run.py** is the sole entry point — it wires sample data into `caption_layout` to build cards.
 - Fonts are auto-discovered from system paths (Liberation Sans, DejaVu Sans, FreeSans, etc.).
+
+---
+
+## Install
+
+```bash
+pip install -r requirements.txt
+```
 
 ---
 
@@ -108,42 +114,7 @@ python create_test_image.py
 
 ---
 
-## Build & Run
-
-```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Generate a single card (all sizes)
-python comfy_to_social.py -t "TITLE" -b "Body text" -i photo.jpg --dreamlog 3 -o noisecore
-
-# Generate one specific size
-python comfy_to_social.py -t "TITLE" -b "Body text" --size instagram_square
-
-# Use a heavier filter preset
-python comfy_to_social.py -t "TITLE" -b "Body text" --preset heavy
-
-# Green accent on specific wrapped lines (0-indexed)
-python comfy_to_social.py -t "TITLE" -b "Body text" --alt-lines 2,3,4
-```
-
-### CLI Arguments
-
-| Flag | Description |
-|------|-------------|
-| `-t`, `--title` | Card headline (required) |
-| `-b`, `--body` | Body text, `\n` for paragraph breaks (required) |
-| `-i`, `--image` | Path to photo to embed |
-| `--comfy-dir` | ComfyUI output dir to scan for latest image |
-| `--caption` | Short caption appended to body |
-| `-f`, `--footer` | Footer tag (default: `NOISECORE`) |
-| `--dreamlog` | Dreamlog issue number (default: 1) |
-| `-o`, `--output` | Output directory (default: `noisecore`) |
-| `--preset` | Filter preset: `default`, `heavy`, `subtle` |
-| `--size` | Single size, or omit for all |
-| `--alt-lines` | Comma-separated line indices for green accent |
-
-### Card Sizes
+## Card Sizes
 
 - `instagram_square` — 1080x1080
 - `instagram_portrait` — 1080x1350
@@ -156,7 +127,6 @@ python comfy_to_social.py -t "TITLE" -b "Body text" --alt-lines 2,3,4
 
 - No secrets or API keys required.
 - No `.env` file needed.
-- ComfyUI integration is optional — if `--comfy-dir` or `-i` is not provided, cards render without a photo.
 
 ---
 

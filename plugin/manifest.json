@@ -17,9 +17,9 @@
       "label": {
         "default": "Noisecore Dreamlog"
       },
-      "minimumSize": { "width": 230, "height": 200 },
-      "preferredDockedSize": { "width": 300, "height": 500 },
-      "preferredFloatingSize": { "width": 300, "height": 500 }
+      "minimumSize": { "width": 300, "height": 400 },
+      "preferredDockedSize": { "width": 380, "height": 720 },
+      "preferredFloatingSize": { "width": 420, "height": 850 }
     }
   ],
   "requiredPermissions": {

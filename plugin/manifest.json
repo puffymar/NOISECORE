@@ -21,5 +21,8 @@
       "preferredDockedSize": { "width": 300, "height": 500 },
       "preferredFloatingSize": { "width": 300, "height": 500 }
     }
-  ]
+  ],
+  "requiredPermissions": {
+    "localFileSystem": "fullAccess"
+  }
 }

@@ -45,6 +45,7 @@ let sectionsRoot = null;
 let statusEl = null;
 
 function setStatus(msg) {
+  if (!statusEl) statusEl = document.getElementById("load-status");
   if (!statusEl) return;
   statusEl.textContent = msg || "";
 }
@@ -61,13 +62,6 @@ function renderAllPanels() {
   sectionsRoot.appendChild(crtPanel.build(state, bus));
   sectionsRoot.appendChild(exportPanel.build(state, bus));
   sectionsRoot.appendChild(presetsPanel.build(state, bus, presetManager));
-
-  // Status line at the very bottom of the scroll area.
-  if (!statusEl) {
-    statusEl = document.createElement("div");
-    statusEl.className = "status-line";
-  }
-  sectionsRoot.appendChild(statusEl);
 }
 
 function init(root) {

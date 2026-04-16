@@ -28,7 +28,7 @@ const presetsPanel    = require("./ui/presetsPanel.js");
 function makeBus() {
   const listeners = {};
   return {
-    on(event, cb)  { (listeners[event] ||= []).push(cb); },
+    on(event, cb)  { if (!listeners[event]) listeners[event] = []; listeners[event].push(cb); },
     emit(event, x) { (listeners[event] || []).forEach((cb) => cb(x)); },
   };
 }

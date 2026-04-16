@@ -6,21 +6,21 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <sp-theme scale="medium" color="darkest">
-      <div id="panel-root">
-        <header class="panel-header">
-          <h1>NOISECORE // DREAMLOG</h1>
-          <p class="panel-subtitle">Card generator</p>
-        </header>
+    <div id="panel-root">
+      <header class="panel-header">
+        <h1>NOISECORE // DREAMLOG</h1>
+        <p class="panel-subtitle">Card generator</p>
+      </header>
 
-        <main id="sections"></main>
+      <main id="sections"></main>
 
-        <footer class="panel-footer">
-          <sp-button variant="cta" id="btn-create-card">Create Card</sp-button>
-          <sp-button variant="secondary" id="btn-update-card">Update Existing</sp-button>
-        </footer>
-      </div>
-    </sp-theme>
+      <footer class="panel-footer">
+        <button id="btn-create-card">Create Card</button>
+        <button id="btn-update-card">Update Existing</button>
+      </footer>
+
+      <div id="load-status" style="color:#F2552C; font-size:11px; padding:8px;">Loading…</div>
+    </div>
     <script src="main.js"></script>
   </body>
 </html>

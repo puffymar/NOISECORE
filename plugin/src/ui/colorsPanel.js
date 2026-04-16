@@ -29,7 +29,7 @@ function build(state, bus) {
       state.divider.color = PALETTE.divider;
       bus.emit("palette.reset");
     }, "secondary"),
-  ]);
+  ], true);
 }
 
 module.exports = { build };

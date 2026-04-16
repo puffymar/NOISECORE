@@ -21,7 +21,7 @@ function build(state, bus) {
 
     toggleField("Title uppercase",  state.title.uppercase,  (v) => { state.title.uppercase = v; }),
     toggleField("Footer uppercase", state.footer.uppercase, (v) => { state.footer.uppercase = v; }),
-  ]);
+  ], true);
 }
 
 module.exports = { build };

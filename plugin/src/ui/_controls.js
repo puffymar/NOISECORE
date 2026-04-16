@@ -2,7 +2,7 @@
  * Noisecore Dreamlog — _controls.js
  *
  * Helpers for building panel controls. Pure DOM, no Photoshop API.
- * Every section imports this to stay consistent.
+ * Uses margins for spacing (UXP does not support CSS gap).
  */
 
 function el(tag, attrs, children) {
@@ -25,87 +25,101 @@ function el(tag, attrs, children) {
   return n;
 }
 
-function section(title, bodyChildren) {
+function section(title, bodyChildren, startCollapsed) {
   const header = el("div", { class: "section-header" }, [
     el("h2", null, title),
-    el("span", { class: "section-toggle" }, "−"),
+    el("span", { class: "section-toggle" }, startCollapsed ? "+" : "\u2212"),
   ]);
   const body = el("div", { class: "section-body" }, bodyChildren);
-  const wrap = el("div", { class: "section" }, [header, body]);
-  header.addEventListener("click", () => {
+  const wrap = el("div", { class: startCollapsed ? "section collapsed" : "section" }, [header, body]);
+  header.addEventListener("click", function () {
     wrap.classList.toggle("collapsed");
-    header.querySelector(".section-toggle").textContent = wrap.classList.contains("collapsed") ? "+" : "−";
+    header.querySelector(".section-toggle").textContent = wrap.classList.contains("collapsed") ? "+" : "\u2212";
   });
   return wrap;
 }
 
 function textField(label, value, onChange) {
-  const input = el("input", { type: "text", value: value ?? "" });
-  input.addEventListener("input", () => onChange(input.value));
+  var input = el("input", { type: "text", value: value || "" });
+  input.addEventListener("input", function () { onChange(input.value); });
   return el("div", { class: "field" }, [el("label", null, label), input]);
 }
 
 function numberField(label, value, min, max, step, onChange) {
-  const input = el("input", { type: "number", value: String(value ?? 0), min: String(min), max: String(max), step: String(step || 1) });
-  input.addEventListener("input", () => onChange(Number(input.value)));
+  var input = el("input", {
+    type: "number",
+    value: String(value || 0),
+    min: String(min),
+    max: String(max),
+    step: String(step || 1),
+  });
+  input.addEventListener("input", function () { onChange(Number(input.value)); });
   return el("div", { class: "field" }, [el("label", null, label), input]);
 }
 
 function sliderField(label, value, min, max, step, onChange) {
-  const input = el("input", { type: "range", value: String(value ?? 0), min: String(min), max: String(max), step: String(step || 1) });
-  const readout = el("span", { class: "section-toggle" }, String(value ?? 0));
-  input.addEventListener("input", () => {
+  var input = el("input", {
+    type: "range",
+    value: String(value || 0),
+    min: String(min),
+    max: String(max),
+    step: String(step || 1),
+  });
+  var readout = el("span", { class: "readout" }, String(value || 0));
+  input.addEventListener("input", function () {
     readout.textContent = input.value;
     onChange(Number(input.value));
   });
-  const row = el("div", { class: "row" }, [input, readout]);
+  var row = el("div", { class: "row" }, [input, readout]);
   return el("div", { class: "field" }, [el("label", null, label), row]);
 }
 
 function selectField(label, options, value, onChange) {
-  const sel = el("select", null, options.map((o) => {
-    const opt = el("option", { value: o.value }, o.label);
+  var sel = el("select", null, options.map(function (o) {
+    var opt = el("option", { value: o.value }, o.label);
     if (o.value === value) opt.setAttribute("selected", "selected");
     return opt;
   }));
-  sel.addEventListener("change", () => onChange(sel.value));
+  sel.addEventListener("change", function () { onChange(sel.value); });
   return el("div", { class: "field" }, [el("label", null, label), sel]);
 }
 
 function toggleField(label, value, onChange) {
-  const cb = el("input", { type: "checkbox" });
+  var cb = el("input", { type: "checkbox" });
   if (value) cb.setAttribute("checked", "checked");
-  cb.addEventListener("change", () => onChange(cb.checked));
+  cb.addEventListener("change", function () { onChange(cb.checked); });
   return el("div", { class: "field" }, [
-    el("label", null, [cb, " ", label]),
+    el("label", null, [cb, label]),
   ]);
 }
 
 function colorField(label, hex, onChange) {
-  const swatch = el("span", { class: "swatch", style: `background:${hex};` });
-  const input = el("input", { type: "text", value: hex });
-  input.addEventListener("input", () => {
-    if (/^#?[0-9a-fA-F]{6}$/.test(input.value.trim())) {
-      const v = input.value.trim().startsWith("#") ? input.value.trim() : "#" + input.value.trim();
+  var swatch = el("span", { class: "swatch", style: "background:" + hex + ";" });
+  var input = el("input", { type: "text", value: hex });
+  input.addEventListener("input", function () {
+    var v = input.value.trim();
+    if (/^#?[0-9a-fA-F]{6}$/.test(v)) {
+      if (v.charAt(0) !== "#") v = "#" + v;
       swatch.style.background = v;
       onChange(v.toUpperCase());
     }
   });
-  const row = el("div", { class: "row" }, [swatch, input]);
+  var row = el("div", { class: "row" }, [swatch, input]);
   return el("div", { class: "field" }, [el("label", null, label), row]);
 }
 
 function textareaField(label, value, onChange) {
-  const ta = el("textarea", null, value ?? "");
-  ta.value = value ?? "";
-  ta.addEventListener("input", () => onChange(ta.value));
+  var ta = el("textarea");
+  ta.textContent = value || "";
+  ta.value = value || "";
+  ta.addEventListener("input", function () { onChange(ta.value); });
   return el("div", { class: "field" }, [el("label", null, label), ta]);
 }
 
 function buttonField(label, onClick, variant) {
-  const b = el("button", { type: "button" }, label);
+  var cls = variant === "cta" ? "cta" : variant === "secondary" ? "secondary" : "";
+  var b = el("button", { type: "button", class: cls }, label);
   b.addEventListener("click", onClick);
-  if (variant === "secondary") b.style.opacity = "0.8";
   return el("div", { class: "field" }, [b]);
 }
 

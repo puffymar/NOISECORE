@@ -1,72 +1,67 @@
 /* Noisecore Dreamlog panel styles */
-
-:root {
-  --nc-bg: #090203;
-  --nc-bg-2: #190407;
-  --nc-accent: #f2552c;
-  --nc-accent-2: #ff5a2a;
-  --nc-muted: #8a7447;
-  --nc-divider: #e14e26;
-  --nc-text: #e8d8c8;
-  --nc-text-dim: #9a8477;
-}
+/* UXP CSS — no gap, no CSS vars, no resize. Use margins for spacing. */
 
 html, body {
   margin: 0;
   padding: 0;
-  background: var(--nc-bg);
-  color: var(--nc-text);
+  background: #090203;
+  color: #e8d8c8;
   font-family: "Adobe Clean", system-ui, sans-serif;
   font-size: 12px;
+  overflow: hidden;
 }
 
 #panel-root {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  padding: 12px;
+  height: 100%;
+  padding: 10px;
   box-sizing: border-box;
-  gap: 12px;
+}
+
+/* ---- Header ---- */
+.panel-header {
+  margin-bottom: 8px;
 }
 
 .panel-header h1 {
-  font-family: Georgia, "Cormorant Garamond", serif;
-  font-size: 16px;
+  font-family: Georgia, serif;
+  font-size: 15px;
   letter-spacing: 2px;
   margin: 0 0 2px 0;
-  color: var(--nc-accent);
+  color: #f2552c;
 }
 
 .panel-subtitle {
   margin: 0;
   font-size: 10px;
-  color: var(--nc-text-dim);
+  color: #9a8477;
   letter-spacing: 1px;
   text-transform: uppercase;
 }
 
+/* ---- Scrollable sections area ---- */
 #sections {
-  flex: 1 1 auto;
+  flex: 1;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-right: 4px;
+  overflow-x: hidden;
+  padding-right: 2px;
 }
 
+/* ---- Collapsible section ---- */
 .section {
   border: 1px solid #2a0a0d;
   border-radius: 4px;
   background: #110305;
+  margin-bottom: 6px;
 }
 
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px;
+  padding: 7px 10px;
   cursor: pointer;
-  user-select: none;
 }
 
 .section-header h2 {
@@ -75,88 +70,170 @@ html, body {
   font-weight: 600;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: var(--nc-accent);
+  color: #f2552c;
 }
 
 .section-toggle {
-  color: var(--nc-text-dim);
+  color: #9a8477;
   font-size: 10px;
+  flex-shrink: 0;
+  margin-left: 8px;
 }
 
 .section-body {
-  padding: 10px 10px 14px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  padding: 8px 10px 12px 10px;
   border-top: 1px solid #2a0a0d;
 }
 
-.section.collapsed .section-body { display: none; }
+.section.collapsed .section-body {
+  display: none;
+}
 
+/* ---- Field ---- */
 .field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.field:last-child {
+  margin-bottom: 0;
 }
 
 .field label {
+  display: block;
   font-size: 10px;
-  color: var(--nc-text-dim);
+  color: #9a8477;
   letter-spacing: 0.8px;
   text-transform: uppercase;
+  margin-bottom: 3px;
 }
 
+/* ---- Row (label + readout, or swatch + input) ---- */
 .row {
   display: flex;
-  gap: 6px;
   align-items: center;
 }
 
-.row > * { flex: 1; }
-
-.panel-footer {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  border-top: 1px solid #2a0a0d;
-  padding-top: 10px;
+.row > input[type="range"] {
+  flex: 1;
 }
 
+.row > .readout {
+  flex-shrink: 0;
+  width: 32px;
+  text-align: right;
+  font-size: 10px;
+  color: #9a8477;
+  margin-left: 6px;
+}
+
+/* ---- Inputs ---- */
 input[type="text"],
 input[type="number"],
 textarea,
 select {
+  display: block;
+  width: 100%;
   background: #0a0102;
-  color: var(--nc-text);
+  color: #e8d8c8;
   border: 1px solid #2a0a0d;
   border-radius: 2px;
-  padding: 4px 6px;
+  padding: 5px 6px;
   font-size: 11px;
   font-family: inherit;
+  box-sizing: border-box;
 }
 
 input[type="range"] {
+  display: block;
   width: 100%;
 }
 
-textarea {
-  min-height: 70px;
-  resize: vertical;
+input[type="checkbox"] {
+  margin-right: 6px;
+  vertical-align: middle;
 }
 
+textarea {
+  min-height: 60px;
+  resize: none;
+}
+
+select {
+  padding: 4px 4px;
+}
+
+/* ---- Buttons ---- */
+button {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid #f2552c;
+  border-radius: 3px;
+  background: #1a0507;
+  color: #f2552c;
+  font-size: 11px;
+  font-family: inherit;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #2a0a0d;
+}
+
+button.secondary {
+  border-color: #2a0a0d;
+  color: #9a8477;
+}
+
+button.cta {
+  background: #f2552c;
+  color: #090203;
+  font-weight: 600;
+  border-color: #f2552c;
+}
+
+button.cta:hover {
+  background: #ff5a2a;
+}
+
+/* ---- Color swatch ---- */
 .swatch {
   display: inline-block;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 2px;
   border: 1px solid #2a0a0d;
   vertical-align: middle;
   margin-right: 6px;
+  flex-shrink: 0;
 }
 
+.row .swatch + input[type="text"] {
+  flex: 1;
+}
+
+/* ---- Footer bar ---- */
+.panel-footer {
+  border-top: 1px solid #2a0a0d;
+  padding-top: 8px;
+  margin-top: 8px;
+}
+
+.panel-footer button {
+  margin-bottom: 5px;
+}
+
+.panel-footer button:last-child {
+  margin-bottom: 0;
+}
+
+/* ---- Status ---- */
 .status-line {
   font-size: 10px;
-  color: var(--nc-text-dim);
+  color: #9a8477;
   font-style: italic;
-  min-height: 12px;
+  padding-top: 6px;
+  min-height: 14px;
 }

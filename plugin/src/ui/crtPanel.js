@@ -15,7 +15,7 @@ function build(state) {
     sliderField("Global grain",            state.globalFx.grain,    0, 100, 1, (v) => { state.globalFx.grain = v; }),
     sliderField("Global vignette",         state.globalFx.vignette, 0, 100, 1, (v) => { state.globalFx.vignette = v; }),
     toggleField("Dust / film specks",      state.crt.dustSpecks,    (v) => { state.crt.dustSpecks = v; }),
-  ]);
+  ], true);
 }
 
 module.exports = { build };

@@ -20,7 +20,7 @@ function build(state) {
     sliderField("Body top margin",        state.body.topMarginBelowImage, 0, 300, 1, (v) => { state.body.topMarginBelowImage = v; }),
     sliderField("Footer bottom margin",   state.footer.bottomMargin,  0, 300, 1, (v) => { state.footer.bottomMargin = v; }),
     sliderField("Divider margin above footer", state.divider.topMarginAboveFooter, 0, 200, 1, (v) => { state.divider.topMarginAboveFooter = v; }),
-  ]);
+  ], true);
 }
 
 module.exports = { build };

@@ -28,7 +28,7 @@ function build(state, bus, presetManager) {
       const p = presetManager.resetDefault();
       bus.emit("preset.load", p);
     }, "secondary"),
-  ]);
+  ], true);
 }
 
 module.exports = { build };

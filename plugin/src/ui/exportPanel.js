@@ -41,7 +41,7 @@ function build(state, bus) {
         setStatus(`Exported ${name}`);
       } catch (e) { setStatus(`PSD export failed: ${e.message}`); }
     }, "secondary"),
-  ]);
+  ], true);
 }
 
 module.exports = { build };

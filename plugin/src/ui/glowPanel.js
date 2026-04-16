@@ -14,7 +14,7 @@ function build(state) {
     toggleField("Text glow", state.title.glowEnabled, (v) => { state.title.glowEnabled = v; }),
     sliderField("Title glow strength",  state.title.glowStrength,  0, 100, 1, (v) => { state.title.glowStrength = v; }),
     sliderField("Footer glow strength", state.footer.glowStrength, 0, 100, 1, (v) => { state.footer.glowStrength = v; }),
-  ]);
+  ], true);
 }
 
 module.exports = { build };

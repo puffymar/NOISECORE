@@ -1,22 +1,19 @@
-# Output directories
-noisecore/
-test_output/
-test_images/
-
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.egg-info/
+# Node / build
+node_modules/
 dist/
 build/
-.eggs/
+*.log
+
+# UXP plugin packaging
+*.ccx
+plugin.ccx
+
+# User export output
+exports/
 
 # Environment
 .env
-.venv/
-venv/
-env/
+.env.local
 
 # IDE
 .vscode/

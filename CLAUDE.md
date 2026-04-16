@@ -1,15 +1,15 @@
-# CLAUDE.md — NOISECORE
+# CLAUDE.md — Noisecore Dreamlog (Photoshop UXP plugin)
 
 This file provides guidance for AI assistants (Claude Code and similar tools) working in this repository.
 
 ## Repository Overview
 
-**Repository:** `puffymar/NOISECORE`
-**Purpose:** Social media card generator with an analog CRT fever-dream aesthetic. Takes images and text, applies a NOISECORE visual filter (grain, scanlines, blood-red tint, chromatic aberration, bloom, vignette), and composites them into styled caption cards for Instagram and TikTok.
+**Repository:** `puffymar/NOISECORE` (name will be updated after this pivot)
+**Purpose:** Photoshop UXP plugin that generates "Noisecore / Dreamlog" style editorial card layouts for Instagram and Reels as fully editable Photoshop documents.
 
-**Tech stack:** Python 3, Pillow (PIL), NumPy
+**Tech stack:** Photoshop UXP (manifest v5), vanilla JavaScript (CommonJS `require`), Adobe Spectrum UXP components, Photoshop DOM API + batchPlay action descriptors.
 
-**Aesthetic:** Dark backgrounds, blood-red / orange glowing text and borders, CRT scanlines, film grain, chromatic aberration, soft bloom. Think analog VHS, fever dream, not clean digital.
+**Aesthetic:** Dark maroon / near-black background, glowing red-orange frames, Trajan / Cinzel serif headline, Cormorant Garamond body, CRT + film-grain overlay on image, footer in the format `NOISECORE // DREAMLOG`. Disciplined production tool for a single visual language — not a generic design plugin.
 
 ---
 
@@ -17,18 +17,55 @@ This file provides guidance for AI assistants (Claude Code and similar tools) wo
 
 ```
 NOISECORE/
-├── CLAUDE.md              # This file — AI assistant guidance
-├── .gitignore             # Ignores output dirs, pycache, env files
-├── requirements.txt       # Pillow, numpy
-├── noisecore_filter.py    # Image filter pipeline (grain, scanlines, tint, glow, etc.)
-├── caption_layout.py      # Card layout engine (title, photo inset, body, footer)
-├── create_test_image.py   # Generates abstract/silhouette test images (no anime)
-└── test_run.py            # Runs full pipeline with sample data, outputs to test_output/
+├── CLAUDE.md                # This file
+├── README.md                # User-facing docs + load instructions
+├── .gitignore
+└── plugin/
+    ├── manifest.json        # UXP manifest v5, Photoshop 24.0+
+    ├── index.html           # Panel HTML shell
+    ├── styles.css           # Panel styles (Noisecore palette)
+    ├── main.js              # Entry — wires DOM events to app.js
+    └── src/
+        ├── app.js           # Orchestrator: state, render, Create/Update flows
+        ├── ui/
+        │   ├── _controls.js     # Shared control helpers (el, section, fields)
+        │   ├── documentPanel.js # Section 1 — Document
+        │   ├── contentPanel.js  # Section 2 — Content
+        │   ├── typographyPanel.js
+        │   ├── colorsPanel.js
+        │   ├── layoutPanel.js
+        │   ├── glowPanel.js
+        │   ├── crtPanel.js
+        │   ├── exportPanel.js
+        │   └── presetsPanel.js
+        ├── core/
+        │   ├── colorSystem.js   # Palette lookups
+        │   ├── layoutEngine.js  # Pure function: state -> resolved layout
+        │   ├── docManager.js    # Document creation + group management
+        │   ├── layerBuilder.js  # BG, outer frame, image frame, divider
+        │   ├── textBuilder.js   # Title, body, footer text layers
+        │   ├── imageBuilder.js  # placeEvent + fit-to-frame transform
+        │   ├── fxBuilder.js     # CRT, grain, vignette overlays
+        │   ├── exportManager.js # PNG/JPG/PSD save-as
+        │   └── presetManager.js # In-memory preset store + built-ins
+        └── utils/
+            ├── constants.js     # ALL default values live here
+            ├── math.js          # clamp, lerp, scale, hex<->rgb, fit
+            └── validation.js    # hex, ranges, required strings
 ```
 
-**Output directories (gitignored):**
-- `test_output/` — test run output
-- `test_images/` — generated test images
+---
+
+## Key Architecture Decisions
+
+- **`utils/constants.js` is the single source of truth** for default values, palette, font stacks, group names, and layer names. Every other module imports from here. If you need to change a default, change it here and only here.
+- **`core/layoutEngine.js` is pure** — it takes state, returns a resolved layout object with absolute pixel coordinates. It never touches the Photoshop API. This makes it trivially testable and keeps layout math separate from Photoshop scripting.
+- **All Photoshop mutations run inside `core.executeAsModal`**. The `app.js` Create Card and Update Existing flows wrap everything in a single modal transaction. Never call batchPlay outside executeAsModal — it will throw at runtime.
+- **Layer groups are stable by name.** The `GROUP_NAMES` and `LAYER_NAMES` constants define exactly what the plugin creates. Update Existing Card finds these by name and rebuilds in place — never rename a group or layer in one place without updating the constants.
+- **batchPlay RGBColor quirk:** the Action Manager RGBColor descriptor uses the property name `grain` (not `green`) for the green channel. This is an Adobe historical quirk. When building an RGBColor descriptor:
+  `{ _obj: "RGBColor", red: r, grain: g, blue: b }`. Do not "fix" this — it will break the descriptor.
+- **Fonts are resolved by PostScript name** (e.g. `TrajanPro-Regular`, `Cinzel-Regular`). Missing fonts substitute; they do not throw.
+- **UI panels never touch Photoshop APIs directly.** They only mutate `state` and emit events on the shared bus. `app.js` is the only module that orchestrates Photoshop work.
 
 ---
 
@@ -36,97 +73,78 @@ NOISECORE/
 
 ### Branching
 
-- **Main branch:** `main` — always stable and deployable
+- **Main branch:** `main` — always deployable
 - **Feature branches:** `feature/<short-description>`
 - **Bug fixes:** `fix/<short-description>`
 - **Claude-initiated branches:** `claude/<session-id>` (auto-generated per task)
 
-### Commit Messages
+### Commit messages
 
-Use concise, imperative-mood commit messages:
+Concise, imperative mood. Example:
 
 ```
-Add bloom effect to filter pipeline
-Fix text wrapping when no photo is present
-Refactor glow rendering into shared helper
+Add disk persistence to presetManager
+Fix RGBColor descriptor in buildDivider
+Implement procedural grain via offscreen canvas
 ```
 
-### Pull Requests
+### Pull requests
 
-- PRs should be small and focused on a single concern.
-- Include a summary of what changed and why.
+- Small and focused on a single concern.
+- Include a short summary of what changed and why.
 
 ---
 
 ## Code Conventions
 
-### Python
+### JavaScript
 
-- Target Python 3.8+ compatibility.
-- Use Pillow (`PIL`) for all image operations.
-- Use NumPy for pixel-level array manipulation (grain, tint, vignette).
-- Keep filter functions composable — each takes an image and returns an image.
-- Color constants are RGB tuples defined in `caption_layout.py` (`COL_*`).
+- CommonJS `require` / `module.exports`. Do not switch to ES modules — UXP's module loader is CommonJS-first.
+- No TypeScript in v1. If we migrate later, do the whole plugin in one pass, not piecemeal.
+- Prefer small single-purpose files. The `core/` split exists for a reason — don't collapse modules together.
+- No dead code — remove unused functions, imports, variables.
+- No commented-out code in commits.
 
-### General
+### Photoshop API
 
-- Prefer clarity over cleverness.
-- No dead code — remove unused functions, imports, and variables.
-- No commented-out code blocks in commits.
-- Keep functions small and single-purpose.
+- Use the DOM API (`doc.createTextLayer`, `layer.move`, etc.) when it's stable.
+- Drop to `action.batchPlay` for anything DOM doesn't expose reliably (shape strokes, gradient fills, layer effects, placeEvent).
+- Everything that mutates the document must run inside `executeAsModal`.
+- When building batchPlay descriptors, keep them on separate lines and annotated — they are the least readable part of the codebase.
 
 ### Naming
 
-- Use descriptive names; avoid abbreviations unless universally understood.
-- Filter functions: `add_<effect>` or `apply_<effect>` pattern.
-- Layout helpers: `_draw_glow_*` prefix for glow-rendered elements.
-
-### Key Architecture Decisions
-
-- **noisecore_filter.py** is pure image-in/image-out — no layout logic.
-- **caption_layout.py** handles all text/layout composition and calls the filter module.
-- **test_run.py** is the sole entry point — it wires sample data into `caption_layout` to build cards.
-- Fonts are auto-discovered from system paths (Liberation Sans, DejaVu Sans, FreeSans, etc.).
+- Core builders: `build<Thing>(layout, state)` — e.g. `buildBackground`, `buildOuterFrame`.
+- UI panels: `build(state, bus)` — each panel exports a single `build` function.
+- Helpers in layerBuilder: `make<Thing>` — e.g. `makeSolidFillLayer`, `makeRoundedRectShape`.
 
 ---
 
-## Install
+## v1 Scope and Known TODOs
 
-```bash
-pip install -r requirements.txt
-```
+Shipped end-to-end:
 
----
+- Full directory structure per spec
+- Working UXP manifest (v5, PS 24.0+)
+- All 9 panel sections with real controls
+- Create Card flow builds real Photoshop layers in named groups
+- Layout engine with exact 1080×1350 defaults + proportional scaling
+- 4 built-in presets: Noisecore Dreamlog, Soft Bronze, Cold Crimson, Heavy CRT
+- PNG / JPG / PSD export via `storage.localFileSystem` folder picker
 
-## Testing
+Known TODOs (intentional v1 stubs — do not silently close these):
 
-```bash
-# Run the full visual test suite (generates sample cards)
-python test_run.py
-
-# Generate abstract test images only
-python create_test_image.py
-```
-
-- `test_run.py` builds multiple card variants (with image, without, all sizes, accent lines).
-- Output goes to `test_output/` — visually inspect the PNGs.
-- No automated pixel-diff tests yet; verification is visual.
-
----
-
-## Card Sizes
-
-- `instagram_square` — 1080x1080
-- `instagram_portrait` — 1080x1350
-- `instagram_reels` — 1080x1920
-- `tiktok` — 1080x1920
-
----
-
-## Environment & Configuration
-
-- No secrets or API keys required.
-- No `.env` file needed.
+1. **Procedural CRT scanlines.** Currently `fxBuilder.makeStubFxLayer` creates a flat fill layer with the right blend mode. Real scanlines need to be rasterised — probably by generating an ImageData on an offscreen canvas and importing as a placed smart object.
+2. **Procedural film grain.** Same story as scanlines — a neutral gray fill at Soft Light holds the slot for now.
+3. **Preset disk persistence.** `presetManager.persist()` and `loadPersisted()` are no-ops. Should write to `uxp.storage.localFileSystem.dataFolder/presets.json`.
+4. **Drag-and-drop image** into the panel.
+5. **Random grain seed button.**
+6. **Duplicate current card as variant.**
+7. **Per-layer visibility toggles in the panel.**
+8. **Instagram crop preview overlay.**
+9. **Auto-fit overflow dialog** — `layoutEngine.computeLayout` already returns `warnings[]`; the UI surfaces them in the status line but there is no interactive "reduce font / extend canvas / trim manually" dialog yet.
+10. **Font enumeration** — the Typography panel currently takes a PostScript name as a text field instead of a real dropdown populated from installed fonts.
+11. **Icons** — `manifest.json` references `icons/panel-light.png`, `panel-dark.png`, and `plugin-icon.png`. These files do not exist yet; UXP will fall back to a default icon. Add real icons before shipping.
 
 ---
 
@@ -134,14 +152,14 @@ python create_test_image.py
 
 When working in this repository, AI assistants should:
 
-1. **Read before editing** — always read a file before modifying it.
-2. **Minimal changes** — only change what is directly requested or clearly necessary.
-3. **No over-engineering** — avoid adding abstractions, helpers, or features beyond the task scope.
-4. **No extra comments** — do not add docstrings or inline comments to unchanged code.
-5. **No backward-compat hacks** — if something is unused, remove it cleanly.
-6. **Confirm destructive actions** — before deleting files, force-pushing, or dropping data, confirm with the user.
-7. **Branch discipline** — develop on the branch specified in the task; never push to `main` directly.
-8. **Security awareness** — avoid introducing command injection via unsanitized file paths in the CLI.
-9. **Aesthetic consistency** — any visual changes must maintain the NOISECORE look: dark, red, glowing, grainy, analog. No clean/modern/flat design.
-10. **Visual testing** — after any layout or filter change, run `python test_run.py` and visually inspect the output.
-11. **Update this file** — if significant new structure, conventions, or workflows are established, update CLAUDE.md to reflect them.
+1. **Read before editing.** Always read a file before modifying it.
+2. **Minimal changes.** Only change what is directly requested or clearly necessary.
+3. **No over-engineering.** Avoid adding abstractions, helpers, or features beyond the task scope.
+4. **Do not "fix" the RGBColor `grain` property name.** See the Architecture note above.
+5. **Do not move Photoshop API calls outside `executeAsModal`.**
+6. **No extra comments.** Do not add docstrings or inline comments to unchanged code.
+7. **No backward-compat hacks.** If something is unused, remove it cleanly.
+8. **Confirm destructive actions.** Before deleting files, force-pushing, or dropping data, confirm with the user.
+9. **Branch discipline.** Develop on the branch specified in the task; never push to `main` directly.
+10. **Update this file.** If significant new structure, conventions, or workflows are established, update `CLAUDE.md` to reflect them.
+11. **Test caveats.** This plugin cannot be runtime-tested outside Photoshop. Syntax-check with Node's `--check` flag, validate JSON, but flag explicitly when a change needs user verification inside the UXP Developer Tool.

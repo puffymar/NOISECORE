@@ -242,3 +242,74 @@ button.cta:hover {
   padding-top: 6px;
   min-height: 14px;
 }
+
+/* ---- Toggle row ---- */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  margin-top: 6px;
+  margin-bottom: 4px;
+}
+
+.toggle-label {
+  font-size: 10px;
+  color: #9a8477;
+  margin-right: 12px;
+  cursor: pointer;
+}
+
+.toggle-label input[type="checkbox"] {
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+/* ---- Small button row ---- */
+.btn-row {
+  display: flex;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.small-btn {
+  flex: 1;
+  padding: 4px 6px;
+  font-size: 9px;
+  margin-right: 4px;
+  border: 1px solid #2a0a0d;
+  color: #9a8477;
+  background: #110305;
+}
+
+.small-btn:last-child {
+  margin-right: 0;
+}
+
+/* ---- Log panel ---- */
+.log-panel {
+  max-height: 180px;
+  min-height: 40px;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  background: #050102;
+  border: 1px solid #2a0a0d;
+  border-radius: 3px;
+  padding: 4px 6px;
+  margin-top: 6px;
+  margin-bottom: 6px;
+  font-family: monospace, "Courier New", monospace;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.log-line {
+  margin: 0;
+  padding: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.log-info  { color: #9a8477; }
+.log-ok    { color: #6CFF6C; }
+.log-warn  { color: #FFD400; }
+.log-fail  { color: #FF4040; font-weight: bold; }
+.log-stage { color: #00F0FF; }

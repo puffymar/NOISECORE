@@ -14,9 +14,21 @@
 
       <div class="panel-footer">
         <button id="btn-create-card" class="cta">Create Card</button>
-        <button id="btn-update-card" class="secondary">Update Existing</button>
-        <div id="load-status" class="status-line">Loading…</div>
+        <button id="btn-test-card" class="secondary">Render Test Card</button>
+        <button id="btn-structure-only" class="secondary">Render Structure Only</button>
+        <div class="toggle-row">
+          <label class="toggle-label"><input type="checkbox" id="chk-debug" checked /> Debug Render Mode</label>
+          <label class="toggle-label"><input type="checkbox" id="chk-safe" /> Safe Mode</label>
+        </div>
+        <div class="btn-row">
+          <button id="btn-validate" class="small-btn">Validate Tree</button>
+          <button id="btn-dump" class="small-btn">Dump Bounds</button>
+          <button id="btn-reset" class="small-btn">Reset Doc</button>
+        </div>
+        <div id="load-status" class="status-line">Loading...</div>
       </div>
+
+      <div id="log-panel" class="log-panel"></div>
 
       <main id="sections"></main>
     </div>

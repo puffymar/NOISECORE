@@ -2,24 +2,23 @@
  * Noisecore Dreamlog — docManager.js
  *
  * Creates or targets the Photoshop document and manages the top-level
- * layer groups. Everything that actually touches the Photoshop API
- * goes through app, core, or action from the "photoshop" module.
+ * layer groups.
  */
 
 const { GROUP_NAMES } = require("../utils/constants.js");
 
-// Lazily resolved so tests / non-PS environments don't crash on import.
 function ps() { return require("photoshop"); }
 function core() { return ps().core; }
 function app()  { return ps().app; }
 function action() { return ps().action; }
+function constants() { return ps().constants; }
 
 async function createDocument(width, height, name) {
   return await core().executeAsModal(
-    async () => {
+    async function () {
       return await app().createDocument({
-        width,
-        height,
+        width: width,
+        height: height,
         resolution: 72,
         mode: "RGBColorMode",
         fill: "transparent",
@@ -30,51 +29,69 @@ async function createDocument(width, height, name) {
   );
 }
 
-// Find a top-level group by name in the active document. Returns null
-// if not present.
 function findGroup(name) {
-  const doc = app().activeDocument;
+  var doc = app().activeDocument;
   if (!doc) return null;
-  for (const layer of doc.layers) {
-    if (layer.kind === "group" && layer.name === name) return layer;
+  for (var i = 0; i < doc.layers.length; i++) {
+    var layer = doc.layers[i];
+    // UXP: check for group via .isGroupLayer or .layerKind or just by presence of .layers
+    if (layer.name === name && layer.layers !== undefined) return layer;
   }
   return null;
 }
 
-// Ensure a named group exists at the top level. Creates it empty if
-// missing and returns the group reference.
 async function ensureGroup(name) {
-  let g = findGroup(name);
+  var g = findGroup(name);
   if (g) return g;
-  const doc = app().activeDocument;
-  g = await doc.createLayerGroup({ name });
+  var doc = app().activeDocument;
+  g = await doc.createLayerGroup({ name: name });
   return g;
 }
 
 async function ensureAllGroups() {
-  const order = [
-    GROUP_NAMES.bg,
-    GROUP_NAMES.frame,
-    GROUP_NAMES.title,
-    GROUP_NAMES.image,
-    GROUP_NAMES.body,
-    GROUP_NAMES.footer,
+  var order = [
     GROUP_NAMES.globalFx,
+    GROUP_NAMES.footer,
+    GROUP_NAMES.body,
+    GROUP_NAMES.image,
+    GROUP_NAMES.title,
+    GROUP_NAMES.frame,
+    GROUP_NAMES.bg,
   ];
-  const out = {};
-  for (const n of order) {
-    out[n] = await ensureGroup(n);
+  var out = {};
+  for (var i = 0; i < order.length; i++) {
+    out[order[i]] = await ensureGroup(order[i]);
   }
   return out;
 }
 
 async function clearGroup(name) {
-  const g = findGroup(name);
+  var g = findGroup(name);
   if (!g) return;
-  // Delete all children, keep the group itself.
-  const children = [...g.layers];
-  for (const c of children) {
-    await c.delete();
+  while (g.layers && g.layers.length > 0) {
+    await g.layers[0].delete();
+  }
+}
+
+// Move the currently active layer into a group using batchPlay
+// (the DOM layer.move method has inconsistent behavior with string args)
+async function moveActiveLayerIntoGroup(group) {
+  if (!group) return;
+  try {
+    await action().batchPlay(
+      [
+        {
+          _obj: "move",
+          _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
+          to: { _ref: "layer", _id: group._id },
+          adjustment: false,
+          version: 5,
+        },
+      ],
+      {}
+    );
+  } catch (e) {
+    console.error("moveActiveLayerIntoGroup failed:", e);
   }
 }
 
@@ -84,9 +101,10 @@ module.exports = {
   ensureGroup,
   ensureAllGroups,
   clearGroup,
-  // exposed for other core modules
+  moveActiveLayerIntoGroup,
   _ps: ps,
   _core: core,
   _app: app,
   _action: action,
+  _constants: constants,
 };

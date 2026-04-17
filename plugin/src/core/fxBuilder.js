@@ -20,55 +20,71 @@
  *     ImageData) to generate the noise and import via placeEmbedded.
  */
 
-const { _action: psAction, ensureGroup } = require("./docManager.js");
-const { LAYER_NAMES, GROUP_NAMES } = require("../utils/constants.js");
-const { hexToRgb } = require("../utils/math.js");
+var docMgr = require("./docManager.js");
+var constants = require("../utils/constants.js");
 
-const batchPlay = (...args) => psAction().batchPlay(...args);
+function batchPlay(desc, opts) {
+  return docMgr._action().batchPlay(desc, opts || {});
+}
 
 async function buildImageFx(layout, state) {
   if (!state.crt.enabled) return;
-  const group = await ensureGroup(GROUP_NAMES.image);
+  var group = await docMgr.ensureGroup(constants.GROUP_NAMES.image);
 
-  await makeStubFxLayer(LAYER_NAMES.crtOverlay,       state.crt.scanlineOpacity, "multiply", 20, 20, 20);
-  await makeStubFxLayer(LAYER_NAMES.filmGrainOverlay, state.crt.filmGrain,       "softLight", 128, 128, 128);
-  await makeStubFxLayer(LAYER_NAMES.imageVignette,    state.crt.imageVignette,   "multiply", 0, 0, 0);
+  await makeStubFxLayer(constants.LAYER_NAMES.crtOverlay, state.crt.scanlineOpacity, "multiply", 20, 20, 20);
+  await docMgr.moveActiveLayerIntoGroup(group);
+
+  await makeStubFxLayer(constants.LAYER_NAMES.filmGrainOverlay, state.crt.filmGrain, "softLight", 128, 128, 128);
+  await docMgr.moveActiveLayerIntoGroup(group);
+
+  await makeStubFxLayer(constants.LAYER_NAMES.imageVignette, state.crt.imageVignette, "multiply", 0, 0, 0);
+  await docMgr.moveActiveLayerIntoGroup(group);
 }
 
 async function buildGlobalFx(layout, state) {
-  const group = await ensureGroup(GROUP_NAMES.globalFx);
-  const g = state.globalFx;
+  var group = await docMgr.ensureGroup(constants.GROUP_NAMES.globalFx);
+  var g = state.globalFx;
   if (g.grain > 0) {
-    await makeStubFxLayer(LAYER_NAMES.globalGrain, g.grain, "softLight", 128, 128, 128);
+    await makeStubFxLayer(constants.LAYER_NAMES.globalGrain, g.grain, "softLight", 128, 128, 128);
+    await docMgr.moveActiveLayerIntoGroup(group);
   }
   if (g.vignette > 0) {
-    await makeStubFxLayer(LAYER_NAMES.globalVignette, g.vignette, "multiply", 0, 0, 0);
+    await makeStubFxLayer(constants.LAYER_NAMES.globalVignette, g.vignette, "multiply", 0, 0, 0);
+    await docMgr.moveActiveLayerIntoGroup(group);
   }
   if (g.colorWash > 0) {
-    await makeStubFxLayer(LAYER_NAMES.globalColorWash, g.colorWash, "softLight", 242, 85, 44);
+    await makeStubFxLayer(constants.LAYER_NAMES.globalColorWash, g.colorWash, "softLight", 242, 85, 44);
+    await docMgr.moveActiveLayerIntoGroup(group);
   }
 }
 
 async function makeStubFxLayer(name, opacity, blendMode, r, g, b) {
-  await batchPlay(
-    [
-      {
-        _obj: "make",
-        _target: [{ _ref: "contentLayer" }],
-        using: {
-          _obj: "contentLayer",
-          type: {
-            _obj: "solidColorLayer",
-            color: { _obj: "RGBColor", red: r, grain: g, blue: b },
-          },
-          name,
-          opacity: { _unit: "percentUnit", _value: opacity },
-          mode: { _enum: "blendMode", _value: blendMode },
+  await batchPlay([
+    {
+      _obj: "make",
+      _target: [{ _ref: "contentLayer" }],
+      using: {
+        _obj: "contentLayer",
+        type: {
+          _obj: "solidColorLayer",
+          color: { _obj: "RGBColor", red: r, grain: g, blue: b },
         },
       },
-    ],
-    {}
-  );
+    },
+  ]);
+  var setDesc = {
+    _obj: "set",
+    _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
+    to: {
+      _obj: "layer",
+      name: name,
+      opacity: { _unit: "percentUnit", _value: opacity || 0 },
+    },
+  };
+  if (blendMode && blendMode !== "normal") {
+    setDesc.to.mode = { _enum: "blendMode", _value: blendMode };
+  }
+  await batchPlay([setDesc]);
 }
 
 module.exports = { buildImageFx, buildGlobalFx };

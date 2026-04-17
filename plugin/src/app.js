@@ -108,27 +108,32 @@ async function createCard() {
     }
 
     // 3. Build everything inside a single modal transaction.
+    var stepErrors = [];
     await ps.core.executeAsModal(
       async () => {
         await ensureAllGroups();
 
-        await buildBackground(layout, state);
-        await buildOuterFrame(layout, state);
-        await buildTitle(layout, state);
-        await buildImageFrame(layout, state);
+        try { await buildBackground(layout, state); } catch (e) { stepErrors.push("BG: " + e.message); }
+        try { await buildOuterFrame(layout, state); } catch (e) { stepErrors.push("Frame: " + e.message); }
+        try { await buildTitle(layout, state); } catch (e) { stepErrors.push("Title: " + e.message); }
+        try { await buildImageFrame(layout, state); } catch (e) { stepErrors.push("ImgFrame: " + e.message); }
         if (state.image.token) {
-          await placeImageInFrame(layout, state, state.image.token);
+          try { await placeImageInFrame(layout, state, state.image.token); } catch (e) { stepErrors.push("Image: " + e.message); }
         }
-        await buildImageFx(layout, state);
-        await buildBody(layout, state);
-        await buildDivider(layout, state);
-        await buildFooter(layout, state);
-        await buildGlobalFx(layout, state);
+        try { await buildImageFx(layout, state); } catch (e) { stepErrors.push("ImgFx: " + e.message); }
+        try { await buildBody(layout, state); } catch (e) { stepErrors.push("Body: " + e.message); }
+        try { await buildDivider(layout, state); } catch (e) { stepErrors.push("Divider: " + e.message); }
+        try { await buildFooter(layout, state); } catch (e) { stepErrors.push("Footer: " + e.message); }
+        try { await buildGlobalFx(layout, state); } catch (e) { stepErrors.push("GlobalFx: " + e.message); }
       },
       { commandName: "Build Noisecore card" }
     );
 
-    setStatus("Card built.");
+    if (stepErrors.length) {
+      setStatus("Card built with errors: " + stepErrors.join("; "));
+    } else {
+      setStatus("Card built.");
+    }
   } catch (e) {
     console.error(e);
     setStatus("Create failed: " + (e && e.message ? e.message : String(e)));
@@ -151,31 +156,36 @@ async function updateExistingCard() {
 
     const layout = computeLayout(state);
 
+    var stepErrors = [];
     await ps.core.executeAsModal(
       async () => {
-        // Clear only the groups the plugin owns, then rebuild them.
         for (const g of Object.values(GROUP_NAMES)) {
           if (findGroup(g)) await clearGroup(g);
         }
 
         await ensureAllGroups();
-        await buildBackground(layout, state);
-        await buildOuterFrame(layout, state);
-        await buildTitle(layout, state);
-        await buildImageFrame(layout, state);
+
+        try { await buildBackground(layout, state); } catch (e) { stepErrors.push("BG: " + e.message); }
+        try { await buildOuterFrame(layout, state); } catch (e) { stepErrors.push("Frame: " + e.message); }
+        try { await buildTitle(layout, state); } catch (e) { stepErrors.push("Title: " + e.message); }
+        try { await buildImageFrame(layout, state); } catch (e) { stepErrors.push("ImgFrame: " + e.message); }
         if (state.image.token) {
-          await placeImageInFrame(layout, state, state.image.token);
+          try { await placeImageInFrame(layout, state, state.image.token); } catch (e) { stepErrors.push("Image: " + e.message); }
         }
-        await buildImageFx(layout, state);
-        await buildBody(layout, state);
-        await buildDivider(layout, state);
-        await buildFooter(layout, state);
-        await buildGlobalFx(layout, state);
+        try { await buildImageFx(layout, state); } catch (e) { stepErrors.push("ImgFx: " + e.message); }
+        try { await buildBody(layout, state); } catch (e) { stepErrors.push("Body: " + e.message); }
+        try { await buildDivider(layout, state); } catch (e) { stepErrors.push("Divider: " + e.message); }
+        try { await buildFooter(layout, state); } catch (e) { stepErrors.push("Footer: " + e.message); }
+        try { await buildGlobalFx(layout, state); } catch (e) { stepErrors.push("GlobalFx: " + e.message); }
       },
       { commandName: "Update Noisecore card" }
     );
 
-    setStatus("Card updated.");
+    if (stepErrors.length) {
+      setStatus("Updated with errors: " + stepErrors.join("; "));
+    } else {
+      setStatus("Card updated.");
+    }
   } catch (e) {
     console.error(e);
     setStatus("Update failed: " + (e && e.message ? e.message : String(e)));

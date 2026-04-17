@@ -9,78 +9,83 @@
  * from utils/math.js.
  */
 
-const { _app: psApp, _action: psAction, ensureGroup, findGroup } = require("./docManager.js");
-const { LAYER_NAMES, GROUP_NAMES } = require("../utils/constants.js");
-const { fitImage } = require("../utils/math.js");
+var docMgr = require("./docManager.js");
+var constants = require("../utils/constants.js");
+var math = require("../utils/math.js");
 
-const batchPlay = (...args) => psAction().batchPlay(...args);
+function batchPlay(desc, opts) {
+  return docMgr._action().batchPlay(desc, opts || {});
+}
 
 async function placeImageInFrame(layout, state, imageToken) {
-  if (!imageToken) return; // no image picked yet — leave frame empty
+  if (!imageToken) return;
 
-  const group = await ensureGroup(GROUP_NAMES.image);
-  const frame = layout.imageFrame;
+  var group = await docMgr.ensureGroup(constants.GROUP_NAMES.image);
+  var frame = layout.imageFrame;
 
-  // Place the file as a smart object. imageToken is a UXP session token
-  // from storage.localFileSystem.getFileForOpening (or createSessionToken
-  // on an existing entry).
-  await batchPlay(
-    [
-      {
-        _obj: "placeEvent",
-        null: { _path: imageToken, _kind: "local" },
-        freeTransformCenterState: { _enum: "quadCenterState", _value: "QCSAverage" },
-        offset: { _obj: "offset", horizontal: { _unit: "pixelsUnit", _value: 0 }, vertical: { _unit: "pixelsUnit", _value: 0 } },
+  // Place the file as a smart object via placeEvent
+  await batchPlay([
+    {
+      _obj: "placeEvent",
+      null: { _path: imageToken, _kind: "local" },
+      freeTransformCenterState: { _enum: "quadCenterState", _value: "QCSAverage" },
+      offset: {
+        _obj: "offset",
+        horizontal: { _unit: "pixelsUnit", _value: 0 },
+        vertical: { _unit: "pixelsUnit", _value: 0 },
       },
-    ],
-    {}
-  );
+    },
+  ]);
 
-  const doc = psApp().activeDocument;
-  const placed = doc.activeLayers[0];
+  // Rename the placed layer
+  await batchPlay([
+    {
+      _obj: "set",
+      _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
+      to: { _obj: "layer", name: constants.LAYER_NAMES.placedImage },
+    },
+  ]);
+
+  // Read placed bounds from the active layer
+  var doc = docMgr._app().activeDocument;
+  var placed = doc.activeLayers[0];
   if (!placed) return;
-  placed.name = LAYER_NAMES.placedImage;
 
-  // Measure placed bounds, then scale + translate to cover the frame.
-  const b = placed.bounds;
-  const sw = b.right - b.left;
-  const sh = b.bottom - b.top;
-  const fit = fitImage(sw, sh, frame.width, frame.height, state.imageFrame.fitMode);
+  var b = placed.bounds;
+  var sw = b.right - b.left;
+  var sh = b.bottom - b.top;
+  var fit = math.fitImage(sw, sh, frame.width, frame.height, state.imageFrame.fitMode);
 
-  const scaleX = (fit.w / sw) * 100;
-  const scaleY = (fit.h / sh) * 100;
+  var scaleX = (fit.w / sw) * 100;
+  var scaleY = (fit.h / sh) * 100;
 
-  // Transform: scale around top-left of current bounds.
-  await batchPlay(
-    [
-      {
-        _obj: "transform",
-        _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
-        freeTransformCenterState: { _enum: "quadCenterState", _value: "QCSIndependent" },
-        position: {
-          _obj: "position",
-          horizontal: { _unit: "pixelsUnit", _value: frame.x + fit.x + state.imageFrame.offsetX },
-          vertical:   { _unit: "pixelsUnit", _value: frame.y + fit.y + state.imageFrame.offsetY },
-        },
-        width:  { _unit: "percentUnit", _value: scaleX * (state.imageFrame.scale || 1) },
-        height: { _unit: "percentUnit", _value: scaleY * (state.imageFrame.scale || 1) },
-        interfaceIconFrameDimmed: { _enum: "interpolationType", _value: "bicubicSharper" },
+  // Transform: scale and position to cover the frame
+  await batchPlay([
+    {
+      _obj: "transform",
+      _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
+      freeTransformCenterState: { _enum: "quadCenterState", _value: "QCSIndependent" },
+      position: {
+        _obj: "position",
+        horizontal: { _unit: "pixelsUnit", _value: frame.x + fit.x + (state.imageFrame.offsetX || 0) },
+        vertical:   { _unit: "pixelsUnit", _value: frame.y + fit.y + (state.imageFrame.offsetY || 0) },
       },
-    ],
-    {}
-  );
+      width:  { _unit: "percentUnit", _value: scaleX * (state.imageFrame.scale || 1) },
+      height: { _unit: "percentUnit", _value: scaleY * (state.imageFrame.scale || 1) },
+      interfaceIconFrameDimmed: { _enum: "interpolationType", _value: "bicubicSharper" },
+    },
+  ]);
 
-  // Move into the Image Frame group and clip to the mask shape below.
-  await placed.move(group, "placeInside");
+  // Move into group using batchPlay (DOM .move is unreliable)
+  await docMgr.moveActiveLayerIntoGroup(group);
 
-  // Create a clipping mask so the placed image follows the rounded rect.
-  await batchPlay(
-    [
-      { _obj: "select", _target: [{ _ref: "layer", _name: LAYER_NAMES.placedImage }] },
-      { _obj: "groupEvent", _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }] },
-    ],
-    {}
-  );
+  // Create a clipping mask so the image follows the rounded rect mask shape
+  await batchPlay([
+    {
+      _obj: "groupEvent",
+      _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
+    },
+  ]);
 }
 
 module.exports = { placeImageInFrame };

@@ -1,36 +1,70 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Noisecore Dreamlog</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div id="panel-root">
-      <header class="panel-header">
-        <h1>NOISECORE // DREAMLOG</h1>
-        <p class="panel-subtitle">Card generator</p>
-      </header>
+    <div class="panel">
+      <h1>Noisecore Dreamlog</h1>
+      <p class="sub">Comprehensive composition builder</p>
 
-      <div class="panel-footer">
-        <button id="btn-create-card" class="cta">Create Card</button>
-        <button id="btn-test-card" class="secondary">Render Test Card</button>
-        <button id="btn-structure-only" class="secondary">Render Structure Only</button>
-        <div class="toggle-row">
-          <label class="toggle-label"><input type="checkbox" id="chk-debug" checked /> Debug Render Mode</label>
-          <label class="toggle-label"><input type="checkbox" id="chk-safe" /> Safe Mode</label>
+      <section>
+        <h2>Document</h2>
+        <div class="grid">
+          <label>Width <input id="docWidth" type="number" min="256" value="1080" /></label>
+          <label>Height <input id="docHeight" type="number" min="256" value="1350" /></label>
+          <label>Resolution <input id="docResolution" type="number" min="72" value="300" /></label>
         </div>
-        <div class="btn-row">
-          <button id="btn-validate" class="small-btn">Validate Tree</button>
-          <button id="btn-dump" class="small-btn">Dump Bounds</button>
-          <button id="btn-reset" class="small-btn">Reset Doc</button>
+      </section>
+
+      <section>
+        <h2>Content</h2>
+        <label>Title <input id="title" type="text" /></label>
+        <label>Body <textarea id="body"></textarea></label>
+        <label>Footer Right <input id="footerRight" type="text" /></label>
+      </section>
+
+      <section>
+        <h2>Image</h2>
+        <div class="row">
+          <button id="pickImage">Pick Image</button>
+          <span id="imagePath">No file selected</span>
         </div>
-        <div id="load-status" class="status-line">Loading...</div>
-      </div>
+      </section>
 
-      <div id="log-panel" class="log-panel"></div>
+      <section>
+        <h2>FX</h2>
+        <div class="grid">
+          <label>Glow <input id="glow" type="range" min="0" max="100" value="55" /></label>
+          <label>CRT Opacity <input id="crtOpacity" type="range" min="0" max="100" value="24" /></label>
+          <label>CRT Density <input id="crtDensity" type="range" min="2" max="16" value="8" /></label>
+          <label>Grain Opacity <input id="grainOpacity" type="range" min="0" max="100" value="18" /></label>
+          <label>Grain Seed <input id="grainSeed" type="number" min="1" value="37" /></label>
+        </div>
+      </section>
 
-      <main id="sections"></main>
+      <section>
+        <h2>Presets</h2>
+        <div class="row">
+          <select id="presetSelect"></select>
+          <button id="loadPreset">Load</button>
+          <button id="savePreset">Save Current</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Actions</h2>
+        <div class="actions">
+          <button id="createCard" class="primary">Create Card</button>
+          <button id="updateCard">Regenerate Active</button>
+          <button id="exportJson">Export Config JSON</button>
+          <button id="importJson">Import Config JSON</button>
+        </div>
+      </section>
+
+      <p id="status" class="status">Ready.</p>
     </div>
     <script src="main.js"></script>
   </body>

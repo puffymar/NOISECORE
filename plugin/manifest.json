@@ -2,27 +2,31 @@
   "manifestVersion": 5,
   "id": "com.noisecore.dreamlog",
   "name": "Noisecore Dreamlog",
-  "version": "1.0.0",
-  "main": "index.html",
-  "host": [
-    {
-      "app": "PS",
-      "minVersion": "24.0.0"
-    }
-  ],
+  "version": "2.0.0",
+  "main": "main.js",
+  "host": {
+    "app": "PS",
+    "minVersion": "25.0.0"
+  },
   "entrypoints": [
     {
       "type": "panel",
-      "id": "noisecoreDreamlogPanel",
+      "id": "noisecore-dreamlog-panel",
       "label": {
         "default": "Noisecore Dreamlog"
       },
-      "minimumSize": { "width": 300, "height": 400 },
-      "preferredDockedSize": { "width": 380, "height": 720 },
-      "preferredFloatingSize": { "width": 420, "height": 850 }
+      "minimumSize": {
+        "width": 360,
+        "height": 560
+      },
+      "maximumSize": {
+        "width": 1200,
+        "height": 1800
+      },
+      "preferredDockedSize": {
+        "width": 420,
+        "height": 780
+      }
     }
-  ],
-  "requiredPermissions": {
-    "localFileSystem": "fullAccess"
-  }
+  ]
 }

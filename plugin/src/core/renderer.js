@@ -245,49 +245,74 @@ async function makeRoundedRectFill(name, x, y, w, h, radius, fillHex, opacity) {
 async function makePointText(name, text, x, y, fontSize, fontName, colorHex, justification) {
   var c = rgb(colorHex);
   var just = justification === "center" ? "center" : justification === "right" ? "right" : "left";
-  var hPct = (x / HARDCODED.width) * 100;
-  var vPct = (y / HARDCODED.height) * 100;
 
-  await batchPlay([
-    {
-      _obj: "make",
-      _target: [{ _ref: "textLayer" }],
-      using: {
-        _obj: "textLayer",
-        textKey: text,
-        textClickPoint: {
-          _obj: "paint",
-          horizontal: { _unit: "percentUnit", _value: hPct },
-          vertical: { _unit: "percentUnit", _value: vPct },
+  log.info("makePointText: '" + text.substring(0, 20) + "' at px(" + x + "," + y + ") size=" + fontSize + " font=" + fontName + " color=" + colorHex);
+
+  // Step 1: Create bare text layer with just the text content
+  try {
+    await batchPlay([
+      {
+        _obj: "make",
+        _target: [{ _ref: "textLayer" }],
+        using: {
+          _obj: "textLayer",
+          textKey: text,
+          textClickPoint: {
+            _obj: "paint",
+            horizontal: { _unit: "pixelsUnit", _value: x },
+            vertical:   { _unit: "pixelsUnit", _value: y },
+          },
         },
-        textStyleRange: [
-          {
-            _obj: "textStyleRange",
-            from: 0,
-            to: text.length,
-            textStyle: {
-              _obj: "textStyle",
-              fontPostScriptName: fontName,
-              size: { _unit: "pointsUnit", _value: fontSize },
-              color: { _obj: "RGBColor", red: c.red, grain: c.green, blue: c.blue },
-              antiAlias: { _enum: "antiAliasType", _value: "antiAliasSmooth" },
-            },
-          },
-        ],
-        paragraphStyleRange: [
-          {
-            _obj: "paragraphStyleRange",
-            from: 0,
-            to: text.length,
-            paragraphStyle: {
-              _obj: "paragraphStyle",
-              align: { _enum: "alignmentType", _value: just },
-            },
-          },
-        ],
       },
-    },
-  ]);
+    ]);
+    log.info("  text layer created");
+  } catch (e) {
+    log.fail("makePointText create", e);
+    throw e;
+  }
+
+  // Step 2: Apply text styling via set
+  try {
+    await batchPlay([
+      {
+        _obj: "set",
+        _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
+        to: {
+          _obj: "textLayer",
+          textStyleRange: [
+            {
+              _obj: "textStyleRange",
+              from: 0,
+              to: text.length,
+              textStyle: {
+                _obj: "textStyle",
+                fontPostScriptName: fontName,
+                size: { _unit: "pointsUnit", _value: fontSize },
+                color: { _obj: "RGBColor", red: c.red, grain: c.green, blue: c.blue },
+                antiAlias: { _enum: "antiAliasType", _value: "antiAliasSmooth" },
+              },
+            },
+          ],
+          paragraphStyleRange: [
+            {
+              _obj: "paragraphStyleRange",
+              from: 0,
+              to: text.length,
+              paragraphStyle: {
+                _obj: "paragraphStyle",
+                align: { _enum: "alignmentType", _value: just },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+    log.info("  text style applied");
+  } catch (e) {
+    log.warn("makePointText style failed (text still visible): " + e.message);
+  }
+
+  // Step 3: Rename
   await batchPlay([
     {
       _obj: "set",
@@ -300,57 +325,84 @@ async function makePointText(name, text, x, y, fontSize, fontName, colorHex, jus
 async function makeBoxText(name, text, x, y, w, h, fontSize, leading, fontName, colorHex) {
   var c = rgb(colorHex);
 
-  await batchPlay([
-    {
-      _obj: "make",
-      _target: [{ _ref: "textLayer" }],
-      using: {
-        _obj: "textLayer",
-        textKey: text,
-        textShape: [
-          {
-            _obj: "textShape",
-            char: { _enum: "char", _value: "box" },
-            bounds: {
-              _obj: "rectangle",
-              top:    { _unit: "pixelsUnit", _value: y },
-              left:   { _unit: "pixelsUnit", _value: x },
-              bottom: { _unit: "pixelsUnit", _value: y + h },
-              right:  { _unit: "pixelsUnit", _value: x + w },
+  log.info("makeBoxText: " + text.length + " chars at box(" + x + "," + y + "," + w + "," + h + ") size=" + fontSize + " font=" + fontName);
+
+  // Step 1: Create text layer with box shape
+  try {
+    await batchPlay([
+      {
+        _obj: "make",
+        _target: [{ _ref: "textLayer" }],
+        using: {
+          _obj: "textLayer",
+          textKey: text,
+          textShape: [
+            {
+              _obj: "textShape",
+              char: { _enum: "char", _value: "box" },
+              bounds: {
+                _obj: "rectangle",
+                top:    { _unit: "pixelsUnit", _value: y },
+                left:   { _unit: "pixelsUnit", _value: x },
+                bottom: { _unit: "pixelsUnit", _value: y + h },
+                right:  { _unit: "pixelsUnit", _value: x + w },
+              },
+              orientation: { _enum: "orientation", _value: "horizontal" },
             },
-            orientation: { _enum: "orientation", _value: "horizontal" },
-          },
-        ],
-        textStyleRange: [
-          {
-            _obj: "textStyleRange",
-            from: 0,
-            to: text.length,
-            textStyle: {
-              _obj: "textStyle",
-              fontPostScriptName: fontName,
-              size: { _unit: "pointsUnit", _value: fontSize },
-              autoLeading: false,
-              leading: { _unit: "pointsUnit", _value: leading },
-              color: { _obj: "RGBColor", red: c.red, grain: c.green, blue: c.blue },
-              antiAlias: { _enum: "antiAliasType", _value: "antiAliasSmooth" },
-            },
-          },
-        ],
-        paragraphStyleRange: [
-          {
-            _obj: "paragraphStyleRange",
-            from: 0,
-            to: text.length,
-            paragraphStyle: {
-              _obj: "paragraphStyle",
-              align: { _enum: "alignmentType", _value: "left" },
-            },
-          },
-        ],
+          ],
+        },
       },
-    },
-  ]);
+    ]);
+    log.info("  box text layer created");
+  } catch (e) {
+    log.fail("makeBoxText create", e);
+    throw e;
+  }
+
+  // Step 2: Apply text styling
+  try {
+    await batchPlay([
+      {
+        _obj: "set",
+        _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
+        to: {
+          _obj: "textLayer",
+          textStyleRange: [
+            {
+              _obj: "textStyleRange",
+              from: 0,
+              to: text.length,
+              textStyle: {
+                _obj: "textStyle",
+                fontPostScriptName: fontName,
+                size: { _unit: "pointsUnit", _value: fontSize },
+                autoLeading: false,
+                leading: { _unit: "pointsUnit", _value: leading },
+                color: { _obj: "RGBColor", red: c.red, grain: c.green, blue: c.blue },
+                antiAlias: { _enum: "antiAliasType", _value: "antiAliasSmooth" },
+              },
+            },
+          ],
+          paragraphStyleRange: [
+            {
+              _obj: "paragraphStyleRange",
+              from: 0,
+              to: text.length,
+              paragraphStyle: {
+                _obj: "paragraphStyle",
+                align: { _enum: "alignmentType", _value: "left" },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+    log.info("  box text style applied");
+  } catch (e) {
+    log.warn("makeBoxText style failed (text still visible): " + e.message);
+  }
+
+  // Step 3: Rename
   await batchPlay([
     {
       _obj: "set",
@@ -468,8 +520,8 @@ async function renderImageSection(doc, groups, state, debugMode) {
         im.x + im.w / 2,
         im.y + im.h / 2 - 20,
         36,
-        "Arial",
-        debugMode ? "#FF00AA" : "#5A1020",
+        "ArialMT",
+        debugMode ? "#FFFFFF" : "#5A1020",
         "center"
       );
       await moveIntoGroup(groups[constants.GROUP_NAMES.image]);
@@ -481,8 +533,8 @@ async function renderImageSection(doc, groups, state, debugMode) {
       im.x + im.w / 2,
       im.y + im.h / 2 - 20,
       48,
-      "Arial",
-      debugMode ? "#FF00AA" : "#3A1020",
+      "ArialMT",
+      debugMode ? "#FFFFFF" : "#3A1020",
       "center"
     );
     await moveIntoGroup(groups[constants.GROUP_NAMES.image]);

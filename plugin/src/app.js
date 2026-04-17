@@ -6,7 +6,7 @@ const {
   exportConfigJson,
   importConfigJson
 } = require("./storage");
-const { runModal, createDreamlogDocument, rebuildActiveDreamlog } = require("./photoshop");
+const { runModal, createDreamlogDocument, rebuildActiveDreamlog, createDreamlogVariants } = require("./photoshop");
 const { createRenderer } = require("./renderer");
 
 function clone(value) {
@@ -16,7 +16,11 @@ function clone(value) {
 function applyTemplate(state) {
   const preset = TEMPLATE_PRESETS[state.template];
   if (!preset) return state;
-  return { ...state, colors: { ...state.colors, ...preset.colors } };
+  return {
+    ...state,
+    colors: { ...state.colors, ...preset.colors },
+    layout: { ...state.layout, ...preset.layout }
+  };
 }
 
 function validate(state) {
@@ -45,6 +49,13 @@ async function createApp(root) {
     ui.setStatus(`Template applied: ${TEMPLATE_PRESETS[state.template].label}`);
   });
 
+  ui.$("randomSeed").addEventListener("click", () => {
+    state = ui.readStateFromUI(state);
+    state.fx.grainSeed = Math.floor(Math.random() * 9999) + 1;
+    ui.writeStateToUI(state);
+    ui.setStatus(`Random grain seed: ${state.fx.grainSeed}`);
+  });
+
   ui.$("pickImage").addEventListener("click", async () => {
     try {
       const file = await pickImageFile();
@@ -71,6 +82,23 @@ async function createApp(root) {
       ui.setStatus("Dreamlog card created.");
     } catch (error) {
       ui.setStatus(`Create failed: ${error.message}`);
+    }
+  });
+
+  ui.$("createVariants").addEventListener("click", async () => {
+    state = applyTemplate(ui.readStateFromUI(state));
+    const issue = validate(state);
+    if (issue) {
+      ui.setStatus(issue);
+      return;
+    }
+    try {
+      await runModal("Create Noisecore Variants", async () => {
+        await createDreamlogVariants(state, 3);
+      });
+      ui.setStatus("Created 3 style variants.");
+    } catch (error) {
+      ui.setStatus(`Variant generation failed: ${error.message}`);
     }
   });
 
@@ -113,6 +141,7 @@ async function createApp(root) {
       doc: { ...DEFAULT_STATE.doc, ...(imported.doc || {}) },
       content: { ...DEFAULT_STATE.content, ...(imported.content || {}) },
       typography: { ...DEFAULT_STATE.typography, ...(imported.typography || {}) },
+      layout: { ...DEFAULT_STATE.layout, ...(imported.layout || {}) },
       fx: { ...DEFAULT_STATE.fx, ...(imported.fx || {}) },
       colors: { ...DEFAULT_STATE.colors, ...(imported.colors || {}) },
       image: imported.image || { token: null, name: "" }

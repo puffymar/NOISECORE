@@ -23,7 +23,24 @@ function createRenderer(root) {
         footerFont: $("footerFont").value.trim(),
         titleSize: Number($("titleSize").value),
         bodySize: Number($("bodySize").value),
-        footerSize: Number($("footerSize").value)
+        footerSize: Number($("footerSize").value),
+        tracking: Number($("tracking").value)
+      },
+      layout: {
+        titleY: Number($("titleY").value),
+        imageY: Number($("imageY").value),
+        imageH: Number($("imageH").value),
+        bodyY: Number($("bodyY").value),
+        footerY: Number($("footerY").value),
+        marginX: Number($("marginX").value)
+      },
+      colors: {
+        bgA: $("bgA").value,
+        bgB: $("bgB").value,
+        border: $("borderColor").value,
+        title: $("titleColor").value,
+        body: $("bodyColor").value,
+        footer: $("footerColor").value
       },
       fx: {
         glow: Number($("glow").value),
@@ -33,7 +50,9 @@ function createRenderer(root) {
         grainSeed: Number($("grainSeed").value),
         titleGlowOpacity: Number($("titleGlowOpacity").value),
         titleGlowBlur: Number($("titleGlowBlur").value),
-        titleGlowEnabled: $("titleGlowEnabled").checked
+        titleGlowEnabled: $("titleGlowEnabled").checked,
+        textCrtOpacity: Number($("textCrtOpacity").value),
+        vignetteOpacity: Number($("vignetteOpacity").value)
       }
     };
   }
@@ -54,6 +73,21 @@ function createRenderer(root) {
     $("titleSize").value = state.typography.titleSize;
     $("bodySize").value = state.typography.bodySize;
     $("footerSize").value = state.typography.footerSize;
+    $("tracking").value = state.typography.tracking;
+
+    $("titleY").value = state.layout.titleY;
+    $("imageY").value = state.layout.imageY;
+    $("imageH").value = state.layout.imageH;
+    $("bodyY").value = state.layout.bodyY;
+    $("footerY").value = state.layout.footerY;
+    $("marginX").value = state.layout.marginX;
+
+    $("bgA").value = state.colors.bgA;
+    $("bgB").value = state.colors.bgB;
+    $("borderColor").value = state.colors.border;
+    $("titleColor").value = state.colors.title;
+    $("bodyColor").value = state.colors.body;
+    $("footerColor").value = state.colors.footer;
 
     $("glow").value = state.fx.glow;
     $("crtOpacity").value = state.fx.crtOpacity;
@@ -63,6 +97,8 @@ function createRenderer(root) {
     $("titleGlowOpacity").value = state.fx.titleGlowOpacity;
     $("titleGlowBlur").value = state.fx.titleGlowBlur;
     $("titleGlowEnabled").checked = !!state.fx.titleGlowEnabled;
+    $("textCrtOpacity").value = state.fx.textCrtOpacity;
+    $("vignetteOpacity").value = state.fx.vignetteOpacity;
 
     $("imagePath").textContent = state.image.name || "No file selected";
   }

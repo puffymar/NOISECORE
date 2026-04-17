@@ -1,15 +1,15 @@
 # Noisecore Dreamlog — Comprehensive UXP Plugin
 
-A rebuilt Photoshop UXP plugin for generating Noisecore / Dreamlog cards with template starting points, typography controls, and FX controls (including title glow + CRT/grain overlays).
+A Photoshop UXP plugin for creating dark editorial Dreamlog cards with deep customization and fast variant generation.
 
-## Highlights
+## What is now customizable
 
-- Template starter styles: Classic Dreamlog, Cold Crimson, Soft Bronze
-- Typography customization: font names + sizes for title/body/footer
-- FX customization: CRT intensity, grain opacity/seed, and title glow controls
-- Config import/export (JSON)
-- Preset load/save (persisted to UXP data folder)
-- Create new card or regenerate active document
+- **Templates:** Classic Dreamlog, Cold Crimson, Soft Bronze, Poster Vertical
+- **Typography:** per-text font + size + tracking
+- **Layout controls:** title/image/body/footer Y positions, image height, horizontal margin
+- **Colors:** background A/B, border, title/body/footer colors
+- **FX:** CRT opacity + density, grain opacity + seed, randomized grain seed, title glow controls, text CRT opacity, vignette opacity
+- **Workflows:** create card, regenerate active, create 3 variants, JSON import/export, save/load presets
 
 ## Load in Photoshop
 

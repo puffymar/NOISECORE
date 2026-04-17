@@ -37,6 +37,31 @@ const PANEL_HTML = `
       <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Title Size <input id="titleSize" type="number" min="8" value="86" /></label>
       <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Body Size <input id="bodySize" type="number" min="8" value="35" /></label>
       <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Footer Size <input id="footerSize" type="number" min="8" value="31" /></label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Tracking <input id="tracking" type="number" min="0" value="40" /></label>
+    </div>
+  </section>
+
+  <section style="background:#181820; border:1px solid #2b2b36; border-radius:8px; padding:10px; margin-bottom:10px;">
+    <h2 style="margin:0 0 8px; font-size:13px; color:#e8d3c4;">Layout</h2>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Title Y <input id="titleY" type="number" value="156" /></label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Image Y <input id="imageY" type="number" value="290" /></label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Image Height <input id="imageH" type="number" value="560" /></label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Body Y <input id="bodyY" type="number" value="968" /></label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Footer Y <input id="footerY" type="number" value="1220" /></label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Horizontal Margin <input id="marginX" type="number" value="96" /></label>
+    </div>
+  </section>
+
+  <section style="background:#181820; border:1px solid #2b2b36; border-radius:8px; padding:10px; margin-bottom:10px;">
+    <h2 style="margin:0 0 8px; font-size:13px; color:#e8d3c4;">Colors</h2>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Background A <input id="bgA" type="color" value="#120a0d" /></label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Background B <input id="bgB" type="color" value="#050406" /></label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Border <input id="borderColor" type="color" value="#ff5a31" /></label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Title <input id="titleColor" type="color" value="#f7eee1" /></label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Body <input id="bodyColor" type="color" value="#d9c6b7" /></label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Footer <input id="footerColor" type="color" value="#ff8a5f" /></label>
     </div>
   </section>
 
@@ -56,9 +81,12 @@ const PANEL_HTML = `
       <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">CRT Density <input id="crtDensity" type="range" min="2" max="16" value="8" /></label>
       <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Grain Opacity <input id="grainOpacity" type="range" min="0" max="100" value="18" /></label>
       <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Grain Seed <input id="grainSeed" type="number" min="1" value="37" /></label>
+      <button id="randomSeed" type="button">Randomize Seed</button>
       <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Title Glow Opacity <input id="titleGlowOpacity" type="range" min="0" max="100" value="40" /></label>
       <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Title Glow Blur <input id="titleGlowBlur" type="number" min="0" value="24" /></label>
       <label style="display:flex; flex-direction:row; align-items:center; gap:8px; font-size:12px;">Enable Title Glow <input id="titleGlowEnabled" type="checkbox" checked /></label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Text CRT Opacity <input id="textCrtOpacity" type="range" min="0" max="100" value="20" /></label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Vignette Opacity <input id="vignetteOpacity" type="range" min="0" max="100" value="28" /></label>
     </div>
   </section>
 
@@ -75,6 +103,7 @@ const PANEL_HTML = `
     <h2 style="margin:0 0 8px; font-size:13px; color:#e8d3c4;">Actions</h2>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
       <button id="createCard">Create Card</button>
+      <button id="createVariants">Create 3 Variants</button>
       <button id="updateCard">Regenerate Active</button>
       <button id="exportJson">Export Config JSON</button>
       <button id="importJson">Import Config JSON</button>

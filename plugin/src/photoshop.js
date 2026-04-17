@@ -26,6 +26,21 @@ async function createDreamlogDocument(state) {
   return doc;
 }
 
+async function createDreamlogVariants(state, count = 3) {
+  for (let i = 0; i < count; i++) {
+    const variant = {
+      ...state,
+      fx: {
+        ...state.fx,
+        grainSeed: state.fx.grainSeed + i * 117,
+        titleGlowOpacity: Math.max(0, Math.min(100, state.fx.titleGlowOpacity + i * 8 - 6)),
+        crtOpacity: Math.max(0, Math.min(100, state.fx.crtOpacity + i * 6 - 4))
+      }
+    };
+    await createDreamlogDocument(variant);
+  }
+}
+
 async function rebuildActiveDreamlog(state) {
   const doc = app.activeDocument;
   if (!doc) throw new Error("No active document.");
@@ -41,37 +56,48 @@ async function rebuildActiveDreamlog(state) {
 async function buildComposition(doc, state) {
   await safe(() => addSolid("Background", state.colors.bgA, "normal", 100));
   await safe(() => addSolid("Tint", state.colors.bgB, "multiply", 60));
-  await safe(() => placeImage(state));
+  await safe(() => placeImage(state, state.layout));
 
   const titleLayer = await safeResult(() => addText("Title", state.content.title, {
-    x: 94,
-    y: 156,
+    x: state.layout.marginX,
+    y: state.layout.titleY,
     size: state.typography.titleSize,
     color: state.colors.title,
-    font: state.typography.titleFont
+    font: state.typography.titleFont,
+    tracking: state.typography.tracking
   }));
 
-  await safe(() => addText("Body", state.content.body, {
-    x: 96,
-    y: state.doc.height - 382,
+  const bodyLayer = await safeResult(() => addText("Body", state.content.body, {
+    x: state.layout.marginX,
+    y: state.layout.bodyY,
     size: state.typography.bodySize,
     color: state.colors.body,
-    font: state.typography.bodyFont
+    font: state.typography.bodyFont,
+    tracking: 0
   }));
 
   await safe(() => addText("Footer", `NOISECORE // ${state.content.footerRight}`, {
-    x: 96,
-    y: state.doc.height - 130,
+    x: state.layout.marginX,
+    y: state.layout.footerY,
     size: state.typography.footerSize,
     color: state.colors.footer,
-    font: state.typography.footerFont
+    font: state.typography.footerFont,
+    tracking: state.typography.tracking
   }));
 
+  await safe(() => addBorderHint(state));
   await safe(() => addCrtOverlay(state));
   await safe(() => addGrainOverlay(state));
+  await safe(() => addVignetteOverlay(state));
 
   if (titleLayer && state.fx.titleGlowEnabled) {
     await safe(() => addTextGlow(titleLayer, state));
+  }
+  if (titleLayer) {
+    await safe(() => addTextCrtLayer(titleLayer, state, "Title CRT"));
+  }
+  if (bodyLayer) {
+    await safe(() => addTextCrtLayer(bodyLayer, state, "Body CRT"));
   }
 }
 
@@ -120,12 +146,15 @@ async function addText(name, text, spec) {
   layer.textItem.size = spec.size;
   layer.textItem.font = spec.font;
   layer.textItem.position = [spec.x, spec.y];
+  if (typeof spec.tracking === "number") {
+    layer.textItem.tracking = spec.tracking;
+  }
   const { r, g, b } = rgb(spec.color);
   layer.textItem.color = { red: r, green: g, blue: b };
   return layer;
 }
 
-async function placeImage(state) {
+async function placeImage(state, layout) {
   if (!state.image.token) return;
   await action.batchPlay([
     {
@@ -136,7 +165,29 @@ async function placeImage(state) {
   const layer = app.activeDocument.activeLayers[0];
   if (layer) {
     layer.name = "Image";
+    await action.batchPlay([
+      {
+        _obj: "transform",
+        _target: [{ _ref: "layer", _id: layer.id }],
+        offset: {
+          _obj: "offset",
+          horizontal: { _unit: "pixelsUnit", _value: layout.marginX },
+          vertical: { _unit: "pixelsUnit", _value: layout.imageY }
+        }
+      }
+    ], {});
   }
+}
+
+async function addBorderHint(state) {
+  await addText("Border Hint", "▢", {
+    x: state.layout.marginX - 26,
+    y: state.layout.titleY - 36,
+    size: 18,
+    color: state.colors.border,
+    font: "ArialMT",
+    tracking: 0
+  });
 }
 
 async function addCrtOverlay(state) {
@@ -145,6 +196,17 @@ async function addCrtOverlay(state) {
 
 async function addGrainOverlay(state) {
   await addSolid(`Film Grain ${state.fx.grainSeed}`, "#808080", "overlay", state.fx.grainOpacity);
+}
+
+async function addVignetteOverlay(state) {
+  await addSolid("Vignette", "#000000", "multiply", state.fx.vignetteOpacity);
+}
+
+async function addTextCrtLayer(sourceLayer, state, name) {
+  const dup = await sourceLayer.duplicate();
+  dup.name = name;
+  dup.opacity = state.fx.textCrtOpacity;
+  dup.blendMode = "softLight";
 }
 
 async function addTextGlow(layer, state) {
@@ -174,5 +236,6 @@ async function addTextGlow(layer, state) {
 module.exports = {
   runModal,
   createDreamlogDocument,
-  rebuildActiveDreamlog
+  rebuildActiveDreamlog,
+  createDreamlogVariants
 };

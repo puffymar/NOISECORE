@@ -1,315 +1,41 @@
-/* Noisecore Dreamlog panel styles */
-/* UXP CSS — no gap, no CSS vars, no resize. Use margins for spacing. */
-
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  background: #090203;
-  color: #e8d8c8;
-  font-family: "Adobe Clean", system-ui, sans-serif;
-  font-size: 12px;
-  overflow: hidden;
+:root {
+  color-scheme: dark;
+  --bg: #101014;
+  --panel: #181820;
+  --ink: #f4ebdf;
+  --muted: #b9a99e;
+  --accent: #ff6a3a;
 }
-
-#panel-root {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+}
+.panel { padding: 12px; }
+h1 { margin: 0; font-size: 18px; }
+.sub { margin: 2px 0 12px; color: var(--muted); }
+section {
+  background: var(--panel);
+  border: 1px solid #2b2b36;
+  border-radius: 8px;
+  margin-bottom: 10px;
   padding: 10px;
-  box-sizing: border-box;
-  overflow: hidden;
 }
-
-/* ---- Header ---- */
-.panel-header {
-  margin-bottom: 8px;
+h2 { margin: 0 0 8px; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; color: #e8d3c4; }
+label { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; font-size: 12px; }
+input, textarea, select, button {
+  background: #12121a;
+  color: var(--ink);
+  border: 1px solid #3b3b4e;
+  border-radius: 6px;
+  padding: 6px 8px;
 }
-
-.panel-header h1 {
-  font-family: Georgia, serif;
-  font-size: 15px;
-  letter-spacing: 2px;
-  margin: 0 0 2px 0;
-  color: #f2552c;
-}
-
-.panel-subtitle {
-  margin: 0;
-  font-size: 10px;
-  color: #9a8477;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
-/* ---- Scrollable sections area ---- */
-#sections {
-  flex: 1;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: scroll;
-  padding-right: 2px;
-}
-
-/* ---- Collapsible section ---- */
-.section {
-  border: 1px solid #2a0a0d;
-  border-radius: 4px;
-  background: #110305;
-  margin-bottom: 6px;
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 7px 10px;
-  cursor: pointer;
-}
-
-.section-header h2 {
-  margin: 0;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  color: #f2552c;
-}
-
-.section-toggle {
-  color: #9a8477;
-  font-size: 10px;
-  flex-shrink: 0;
-  margin-left: 8px;
-}
-
-.section-body {
-  padding: 8px 10px 12px 10px;
-  border-top: 1px solid #2a0a0d;
-}
-
-.section.collapsed .section-body {
-  display: none;
-}
-
-/* ---- Field ---- */
-.field {
-  margin-bottom: 8px;
-}
-
-.field:last-child {
-  margin-bottom: 0;
-}
-
-.field label {
-  display: block;
-  font-size: 10px;
-  color: #9a8477;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  margin-bottom: 3px;
-}
-
-/* ---- Row (label + readout, or swatch + input) ---- */
-.row {
-  display: flex;
-  align-items: center;
-}
-
-.row > input[type="range"] {
-  flex: 1;
-}
-
-.row > .readout {
-  flex-shrink: 0;
-  width: 32px;
-  text-align: right;
-  font-size: 10px;
-  color: #9a8477;
-  margin-left: 6px;
-}
-
-/* ---- Inputs ---- */
-input[type="text"],
-input[type="number"],
-textarea,
-select {
-  display: block;
-  width: 100%;
-  background: #0a0102;
-  color: #e8d8c8;
-  border: 1px solid #2a0a0d;
-  border-radius: 2px;
-  padding: 5px 6px;
-  font-size: 11px;
-  font-family: inherit;
-  box-sizing: border-box;
-}
-
-input[type="range"] {
-  display: block;
-  width: 100%;
-}
-
-input[type="checkbox"] {
-  margin-right: 6px;
-  vertical-align: middle;
-}
-
-textarea {
-  min-height: 60px;
-  resize: none;
-}
-
-select {
-  padding: 4px 4px;
-}
-
-/* ---- Buttons ---- */
-button {
-  display: block;
-  width: 100%;
-  padding: 7px 10px;
-  border: 1px solid #f2552c;
-  border-radius: 3px;
-  background: #1a0507;
-  color: #f2552c;
-  font-size: 11px;
-  font-family: inherit;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-
-button:hover {
-  background: #2a0a0d;
-}
-
-button.secondary {
-  border-color: #2a0a0d;
-  color: #9a8477;
-}
-
-button.cta {
-  background: #f2552c;
-  color: #090203;
-  font-weight: 600;
-  border-color: #f2552c;
-}
-
-button.cta:hover {
-  background: #ff5a2a;
-}
-
-/* ---- Color swatch ---- */
-.swatch {
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  border-radius: 2px;
-  border: 1px solid #2a0a0d;
-  vertical-align: middle;
-  margin-right: 6px;
-  flex-shrink: 0;
-}
-
-.row .swatch + input[type="text"] {
-  flex: 1;
-}
-
-/* ---- Footer bar ---- */
-.panel-footer {
-  border-top: 1px solid #2a0a0d;
-  padding-top: 8px;
-  margin-top: 8px;
-}
-
-.panel-footer button {
-  margin-bottom: 5px;
-}
-
-.panel-footer button:last-child {
-  margin-bottom: 0;
-}
-
-/* ---- Status ---- */
-.status-line {
-  font-size: 10px;
-  color: #9a8477;
-  font-style: italic;
-  padding-top: 6px;
-  min-height: 14px;
-}
-
-/* ---- Toggle row ---- */
-.toggle-row {
-  display: flex;
-  align-items: center;
-  margin-top: 6px;
-  margin-bottom: 4px;
-}
-
-.toggle-label {
-  font-size: 10px;
-  color: #9a8477;
-  margin-right: 12px;
-  cursor: pointer;
-}
-
-.toggle-label input[type="checkbox"] {
-  margin-right: 4px;
-  vertical-align: middle;
-}
-
-/* ---- Small button row ---- */
-.btn-row {
-  display: flex;
-  margin-top: 4px;
-  margin-bottom: 4px;
-}
-
-.small-btn {
-  flex: 1;
-  padding: 4px 6px;
-  font-size: 9px;
-  margin-right: 4px;
-  border: 1px solid #2a0a0d;
-  color: #9a8477;
-  background: #110305;
-}
-
-.small-btn:last-child {
-  margin-right: 0;
-}
-
-/* ---- Log panel ---- */
-.log-panel {
-  max-height: 180px;
-  min-height: 40px;
-  overflow-y: scroll;
-  overflow-x: hidden;
-  background: #050102;
-  border: 1px solid #2a0a0d;
-  border-radius: 3px;
-  padding: 4px 6px;
-  margin-top: 6px;
-  margin-bottom: 6px;
-  font-family: monospace, "Courier New", monospace;
-  font-size: 9px;
-  line-height: 1.4;
-}
-
-.log-line {
-  margin: 0;
-  padding: 0;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-.log-info  { color: #9a8477; }
-.log-ok    { color: #6CFF6C; }
-.log-warn  { color: #FFD400; }
-.log-fail  { color: #FF4040; font-weight: bold; }
-.log-stage { color: #00F0FF; }
+textarea { min-height: 84px; resize: vertical; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.row { display: flex; gap: 8px; align-items: center; }
+.actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+button.primary { border-color: var(--accent); color: #ffd5c4; }
+.status { font-size: 12px; color: var(--muted); margin: 8px 2px 0; }
+#imagePath { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

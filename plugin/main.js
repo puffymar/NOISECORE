@@ -6,6 +6,13 @@ const PANEL_HTML = `
   <p style="margin:0 0 12px; color:#b9a99e;">Comprehensive composition builder</p>
 
   <section style="background:#181820; border:1px solid #2b2b36; border-radius:8px; padding:10px; margin-bottom:10px;">
+    <h2 style="margin:0 0 8px; font-size:13px; color:#e8d3c4;">Template</h2>
+    <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Start Template
+      <select id="template"></select>
+    </label>
+  </section>
+
+  <section style="background:#181820; border:1px solid #2b2b36; border-radius:8px; padding:10px; margin-bottom:10px;">
     <h2 style="margin:0 0 8px; font-size:13px; color:#e8d3c4;">Document</h2>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
       <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Width <input id="docWidth" type="number" min="256" value="1080" /></label>
@@ -19,6 +26,18 @@ const PANEL_HTML = `
     <label style="display:flex; flex-direction:column; gap:6px; font-size:12px; margin-bottom:8px;">Title <input id="title" type="text" /></label>
     <label style="display:flex; flex-direction:column; gap:6px; font-size:12px; margin-bottom:8px;">Body <textarea id="body" style="min-height:84px;"></textarea></label>
     <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Footer Right <input id="footerRight" type="text" /></label>
+  </section>
+
+  <section style="background:#181820; border:1px solid #2b2b36; border-radius:8px; padding:10px; margin-bottom:10px;">
+    <h2 style="margin:0 0 8px; font-size:13px; color:#e8d3c4;">Typography</h2>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Title Font <input id="titleFont" type="text" value="TrajanPro-Regular" /></label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Body Font <input id="bodyFont" type="text" value="CormorantGaramond-Regular" /></label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Footer Font <input id="footerFont" type="text" value="Cinzel-Regular" /></label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Title Size <input id="titleSize" type="number" min="8" value="86" /></label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Body Size <input id="bodySize" type="number" min="8" value="35" /></label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Footer Size <input id="footerSize" type="number" min="8" value="31" /></label>
+    </div>
   </section>
 
   <section style="background:#181820; border:1px solid #2b2b36; border-radius:8px; padding:10px; margin-bottom:10px;">
@@ -37,6 +56,9 @@ const PANEL_HTML = `
       <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">CRT Density <input id="crtDensity" type="range" min="2" max="16" value="8" /></label>
       <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Grain Opacity <input id="grainOpacity" type="range" min="0" max="100" value="18" /></label>
       <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Grain Seed <input id="grainSeed" type="number" min="1" value="37" /></label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Title Glow Opacity <input id="titleGlowOpacity" type="range" min="0" max="100" value="40" /></label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:12px;">Title Glow Blur <input id="titleGlowBlur" type="number" min="0" value="24" /></label>
+      <label style="display:flex; flex-direction:row; align-items:center; gap:8px; font-size:12px;">Enable Title Glow <input id="titleGlowEnabled" type="checkbox" checked /></label>
     </div>
   </section>
 

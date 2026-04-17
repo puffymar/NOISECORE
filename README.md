@@ -1,24 +1,23 @@
 # Noisecore Dreamlog — Comprehensive UXP Plugin
 
-This repository now contains a rebuilt, from-scratch Photoshop UXP plugin for generating a full "Noisecore / Dreamlog" card workflow.
+A rebuilt Photoshop UXP plugin for generating Noisecore / Dreamlog cards with template starting points, typography controls, and FX controls (including title glow + CRT/grain overlays).
 
-## What this version includes
+## Highlights
 
-- Single-click document generation for a full Dreamlog composition
-- Structured groups/layers for: background, frame, title, image, body copy, divider, footer, and FX overlays
-- Procedural-style CRT and grain controls (strength, opacity, scanline density, seed)
-- Preset system with built-ins and local persistence
-- JSON import/export of full configuration
-- Regenerate-in-place workflow on the active Dreamlog document
-- Validation and status reporting in panel UI
+- Template starter styles: Classic Dreamlog, Cold Crimson, Soft Bronze
+- Typography customization: font names + sizes for title/body/footer
+- FX customization: CRT intensity, grain opacity/seed, and title glow controls
+- Config import/export (JSON)
+- Preset load/save (persisted to UXP data folder)
+- Create new card or regenerate active document
 
-## Load the plugin
+## Load in Photoshop
 
 1. Open **UXP Developer Tool**.
 2. Add `plugin/manifest.json`.
-3. Load plugin and open from **Plugins → Noisecore Dreamlog**.
+3. Load plugin and open **Plugins → Noisecore Dreamlog**.
 
 ## Notes
 
-- This code is designed for Photoshop UXP runtime; some functions can only be verified inside Photoshop.
-- Outside Photoshop, use syntax checks (`node --check`) for validation.
+- Runtime behavior must be validated inside Photoshop.
+- Use `node --check` for syntax verification outside Photoshop.

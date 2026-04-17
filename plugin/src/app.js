@@ -1,4 +1,4 @@
-const { DEFAULT_STATE, BUILTIN_PRESETS } = require("./defaults");
+const { DEFAULT_STATE, BUILTIN_PRESETS, TEMPLATE_PRESETS } = require("./defaults");
 const {
   savePresets,
   loadPresets,
@@ -11,6 +11,12 @@ const { createRenderer } = require("./renderer");
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function applyTemplate(state) {
+  const preset = TEMPLATE_PRESETS[state.template];
+  if (!preset) return state;
+  return { ...state, colors: { ...state.colors, ...preset.colors } };
 }
 
 function validate(state) {
@@ -29,8 +35,15 @@ async function createApp(root) {
   const allPresets = () => ({ ...BUILTIN_PRESETS, ...userPresets });
   const refreshPresetUI = () => ui.fillPresetSelect(Object.keys(allPresets()));
 
+  ui.fillTemplateSelect(Object.entries(TEMPLATE_PRESETS).map(([key, item]) => [key, item.label]));
   refreshPresetUI();
   ui.writeStateToUI(state);
+
+  ui.$("template").addEventListener("change", () => {
+    state = applyTemplate(ui.readStateFromUI(state));
+    ui.writeStateToUI(state);
+    ui.setStatus(`Template applied: ${TEMPLATE_PRESETS[state.template].label}`);
+  });
 
   ui.$("pickImage").addEventListener("click", async () => {
     try {
@@ -45,7 +58,7 @@ async function createApp(root) {
   });
 
   ui.$("createCard").addEventListener("click", async () => {
-    state = ui.readStateFromUI(state);
+    state = applyTemplate(ui.readStateFromUI(state));
     const issue = validate(state);
     if (issue) {
       ui.setStatus(issue);
@@ -62,7 +75,7 @@ async function createApp(root) {
   });
 
   ui.$("updateCard").addEventListener("click", async () => {
-    state = ui.readStateFromUI(state);
+    state = applyTemplate(ui.readStateFromUI(state));
     const issue = validate(state);
     if (issue) {
       ui.setStatus(issue);
@@ -79,7 +92,7 @@ async function createApp(root) {
   });
 
   ui.$("exportJson").addEventListener("click", async () => {
-    state = ui.readStateFromUI(state);
+    state = applyTemplate(ui.readStateFromUI(state));
     const file = await exportConfigJson(state);
     if (!file) {
       ui.setStatus("Export canceled.");
@@ -99,6 +112,7 @@ async function createApp(root) {
       ...imported,
       doc: { ...DEFAULT_STATE.doc, ...(imported.doc || {}) },
       content: { ...DEFAULT_STATE.content, ...(imported.content || {}) },
+      typography: { ...DEFAULT_STATE.typography, ...(imported.typography || {}) },
       fx: { ...DEFAULT_STATE.fx, ...(imported.fx || {}) },
       colors: { ...DEFAULT_STATE.colors, ...(imported.colors || {}) },
       image: imported.image || { token: null, name: "" }
@@ -120,7 +134,7 @@ async function createApp(root) {
   });
 
   ui.$("savePreset").addEventListener("click", async () => {
-    state = ui.readStateFromUI(state);
+    state = applyTemplate(ui.readStateFromUI(state));
     const key = `Custom ${new Date().toISOString().slice(0, 19)}`;
     userPresets[key] = clone(state);
     await savePresets(userPresets);

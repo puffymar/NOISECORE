@@ -50,13 +50,13 @@ async function ensureGroup(name) {
 
 async function ensureAllGroups() {
   var order = [
-    GROUP_NAMES.globalFx,
-    GROUP_NAMES.footer,
-    GROUP_NAMES.body,
-    GROUP_NAMES.image,
-    GROUP_NAMES.title,
-    GROUP_NAMES.frame,
     GROUP_NAMES.bg,
+    GROUP_NAMES.frame,
+    GROUP_NAMES.title,
+    GROUP_NAMES.image,
+    GROUP_NAMES.body,
+    GROUP_NAMES.footer,
+    GROUP_NAMES.globalFx,
   ];
   var out = {};
   for (var i = 0; i < order.length; i++) {

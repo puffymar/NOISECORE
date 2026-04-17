@@ -83,7 +83,7 @@ async function moveActiveLayerIntoGroup(group) {
         {
           _obj: "move",
           _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
-          to: { _ref: "layer", _id: group._id },
+          to: { _ref: "layer", _id: group.id },
           adjustment: false,
           version: 5,
         },

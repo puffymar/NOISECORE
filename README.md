@@ -1,74 +1,24 @@
-# Noisecore Dreamlog
+# Noisecore Dreamlog — Comprehensive UXP Plugin
 
-Photoshop UXP plugin that builds "Noisecore / Dreamlog" card layouts as fully editable Photoshop documents.
+This repository now contains a rebuilt, from-scratch Photoshop UXP plugin for generating a full "Noisecore / Dreamlog" card workflow.
 
-Renders a single very specific visual formula:
+## What this version includes
 
-- deep maroon / near-black textured background
-- glowing rounded outer border
-- large cinematic serif title
-- image inset with rounded corners and CRT overlay
-- paragraph text block
-- thin glowing divider
-- footer in the format `NOISECORE // DREAMLOG`
+- Single-click document generation for a full Dreamlog composition
+- Structured groups/layers for: background, frame, title, image, body copy, divider, footer, and FX overlays
+- Procedural-style CRT and grain controls (strength, opacity, scanline density, seed)
+- Preset system with built-ins and local persistence
+- JSON import/export of full configuration
+- Regenerate-in-place workflow on the active Dreamlog document
+- Validation and status reporting in panel UI
 
-## Load in Photoshop
+## Load the plugin
 
-1. Install the **UXP Developer Tool** (Creative Cloud → Apps → UXP Developer Tool).
-2. Open UXP Developer Tool → **Add Plugin** → select `plugin/manifest.json`.
-3. Click **Load** next to the plugin entry. The Noisecore Dreamlog panel will appear in Photoshop under **Plugins → Noisecore Dreamlog**.
+1. Open **UXP Developer Tool**.
+2. Add `plugin/manifest.json`.
+3. Load plugin and open from **Plugins → Noisecore Dreamlog**.
 
-Requires Photoshop 2024 (v25) or newer for manifestVersion 5 UXP panels.
+## Notes
 
-## Use
-
-1. Open the panel.
-2. Enter a title, paragraph, and footer right label in the **Content** section.
-3. Pick an image.
-4. Adjust any section you want (Typography, Colors, Border & Layout, Glow, Texture / CRT).
-5. Click **Create Card**. A new 1080×1350 document is built with every layer grouped and editable.
-6. Tweak settings and click **Update Existing** to rebuild in place.
-7. **Export** — pick a folder and export PNG, JPG, or PSD copy.
-
-## Presets
-
-Four built-in presets ship with the plugin:
-
-- **Noisecore Dreamlog** — the default palette
-- **Soft Bronze** — muted bronze/amber variant
-- **Cold Crimson** — deep red / near-black variant
-- **Heavy CRT** — maxed scanline + grain treatment
-
-Load or save presets in the **Presets** section.
-
-## Directory
-
-```
-plugin/
-  manifest.json
-  index.html
-  styles.css
-  main.js
-  src/
-    app.js
-    ui/           (9 panel sections)
-    core/         (layout engine, layer/text/image/fx builders, export, presets)
-    utils/        (constants, math, validation)
-```
-
-## v1 status and known TODOs
-
-Shipped end-to-end:
-
-- All 9 panel sections with real controls
-- Create Card flow: BG group, Outer Frame, Title, Image Frame (+ placed image), Body Copy, Divider, Footer, Global FX — all layers grouped and named per spec
-- Layout engine with exact 1080×1350 defaults from the spec, proportional scaling for other canvas sizes
-- Four built-in presets
-- PNG / JPG / PSD export
-
-Known stubs — see `CLAUDE.md` for the full list:
-
-- CRT scanlines and film grain currently render as flat neutral fill layers with the correct blend mode instead of procedurally generated noise. These layers are named correctly so they can be replaced without touching layout code.
-- Preset save/load is in-memory only for v1; disk persistence is a follow-up.
-- Drag-and-drop image into the panel, random grain seed, duplicate-as-variant, per-layer visibility toggles, and "Instagram crop preview" are all nice-to-haves not yet implemented.
-- Fonts are selected by PostScript name; if Trajan Pro / Cinzel are missing Photoshop will substitute a fallback.
+- This code is designed for Photoshop UXP runtime; some functions can only be verified inside Photoshop.
+- Outside Photoshop, use syntax checks (`node --check`) for validation.

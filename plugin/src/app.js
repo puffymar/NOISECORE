@@ -1,110 +1,133 @@
-/*
- * Noisecore Dreamlog — app.js
- *
- * Owns the global state, builds the UI panel sections, and
- * exposes getState / getTestState for the renderer.
- */
+const { DEFAULT_STATE, BUILTIN_PRESETS } = require("./defaults");
+const {
+  savePresets,
+  loadPresets,
+  pickImageFile,
+  exportConfigJson,
+  importConfigJson
+} = require("./storage");
+const { runModal, createDreamlogDocument, rebuildActiveDreamlog } = require("./photoshop");
+const { createRenderer } = require("./renderer");
 
-var presetMgr = require("./core/presetManager.js");
-var renderer  = require("./core/renderer.js");
-var constants = require("./utils/constants.js");
-
-var documentPanel   = require("./ui/documentPanel.js");
-var contentPanel    = require("./ui/contentPanel.js");
-var typographyPanel = require("./ui/typographyPanel.js");
-var colorsPanel     = require("./ui/colorsPanel.js");
-var layoutPanel     = require("./ui/layoutPanel.js");
-var glowPanel       = require("./ui/glowPanel.js");
-var crtPanel        = require("./ui/crtPanel.js");
-var exportPanel     = require("./ui/exportPanel.js");
-var presetsPanel    = require("./ui/presetsPanel.js");
-
-function makeBus() {
-  var listeners = {};
-  return {
-    on: function (event, cb) {
-      if (!listeners[event]) listeners[event] = [];
-      listeners[event].push(cb);
-    },
-    emit: function (event, x) {
-      (listeners[event] || []).forEach(function (cb) { cb(x); });
-    },
-  };
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
 }
 
-var state = presetMgr.defaultPreset();
-state.image = { entry: null, token: null, name: null, replaceOnUpdate: false };
-state.document.createNew = true;
-state.document.useCurrent = false;
-
-var presetManager = new presetMgr.PresetManager();
-var bus = makeBus();
-
-var sectionsRoot = null;
-var statusEl = null;
-
-function setStatus(msg) {
-  if (!statusEl) statusEl = document.getElementById("load-status");
-  if (!statusEl) return;
-  statusEl.textContent = msg || "";
+function validate(state) {
+  if (!state.content.title) return "Title is required.";
+  if (!state.content.body) return "Body text is required.";
+  if (state.doc.width < 256 || state.doc.height < 256) return "Document dimensions are too small.";
+  if (state.doc.resolution < 72) return "Resolution must be 72 or above.";
+  return "";
 }
 
-function renderAllPanels() {
-  if (!sectionsRoot) return;
-  sectionsRoot.innerHTML = "";
-  sectionsRoot.appendChild(documentPanel.build(state, bus));
-  sectionsRoot.appendChild(contentPanel.build(state, bus));
-  sectionsRoot.appendChild(typographyPanel.build(state, bus));
-  sectionsRoot.appendChild(colorsPanel.build(state, bus));
-  sectionsRoot.appendChild(layoutPanel.build(state, bus));
-  sectionsRoot.appendChild(glowPanel.build(state, bus));
-  sectionsRoot.appendChild(crtPanel.build(state, bus));
-  sectionsRoot.appendChild(exportPanel.build(state, bus));
-  sectionsRoot.appendChild(presetsPanel.build(state, bus, presetManager));
-}
+async function createApp(root) {
+  const ui = createRenderer(root);
+  let state = clone(DEFAULT_STATE);
+  let userPresets = await loadPresets();
 
-function init(root) {
-  sectionsRoot = root;
-  renderAllPanels();
+  const allPresets = () => ({ ...BUILTIN_PRESETS, ...userPresets });
+  const refreshPresetUI = () => ui.fillPresetSelect(Object.keys(allPresets()));
 
-  bus.on("preset.load", function (p) {
-    var image = state.image;
-    for (var k in p) {
-      if (p.hasOwnProperty(k)) state[k] = p[k];
+  refreshPresetUI();
+  ui.writeStateToUI(state);
+
+  ui.$("pickImage").addEventListener("click", async () => {
+    try {
+      const file = await pickImageFile();
+      if (!file) return;
+      state.image = { token: await file.createSessionToken(), name: file.name };
+      ui.writeStateToUI(state);
+      ui.setStatus(`Image selected: ${file.name}`);
+    } catch (error) {
+      ui.setStatus(`Image selection failed: ${error.message}`);
     }
-    state.image = image;
-    renderAllPanels();
-    setStatus("Loaded preset: " + p.name);
   });
 
-  bus.on("preset.saved",   function (name) { setStatus("Saved preset: " + name); });
-  bus.on("preset.deleted", function (name) { setStatus("Deleted preset: " + name); });
-  bus.on("status", setStatus);
+  ui.$("createCard").addEventListener("click", async () => {
+    state = ui.readStateFromUI(state);
+    const issue = validate(state);
+    if (issue) {
+      ui.setStatus(issue);
+      return;
+    }
+    try {
+      await runModal("Create Noisecore Dreamlog", async () => {
+        await createDreamlogDocument(state);
+      });
+      ui.setStatus("Dreamlog card created.");
+    } catch (error) {
+      ui.setStatus(`Create failed: ${error.message}`);
+    }
+  });
 
-  setStatus("Ready.");
+  ui.$("updateCard").addEventListener("click", async () => {
+    state = ui.readStateFromUI(state);
+    const issue = validate(state);
+    if (issue) {
+      ui.setStatus(issue);
+      return;
+    }
+    try {
+      await runModal("Regenerate Noisecore Dreamlog", async () => {
+        await rebuildActiveDreamlog(state);
+      });
+      ui.setStatus("Active card regenerated.");
+    } catch (error) {
+      ui.setStatus(`Regenerate failed: ${error.message}`);
+    }
+  });
+
+  ui.$("exportJson").addEventListener("click", async () => {
+    state = ui.readStateFromUI(state);
+    const file = await exportConfigJson(state);
+    if (!file) {
+      ui.setStatus("Export canceled.");
+      return;
+    }
+    ui.setStatus(`Exported configuration to ${file.name}.`);
+  });
+
+  ui.$("importJson").addEventListener("click", async () => {
+    const imported = await importConfigJson();
+    if (!imported) {
+      ui.setStatus("Import canceled or invalid JSON.");
+      return;
+    }
+    state = {
+      ...clone(DEFAULT_STATE),
+      ...imported,
+      doc: { ...DEFAULT_STATE.doc, ...(imported.doc || {}) },
+      content: { ...DEFAULT_STATE.content, ...(imported.content || {}) },
+      fx: { ...DEFAULT_STATE.fx, ...(imported.fx || {}) },
+      colors: { ...DEFAULT_STATE.colors, ...(imported.colors || {}) },
+      image: imported.image || { token: null, name: "" }
+    };
+    ui.writeStateToUI(state);
+    ui.setStatus("Imported configuration JSON.");
+  });
+
+  ui.$("loadPreset").addEventListener("click", () => {
+    const name = ui.$("presetSelect").value;
+    const preset = allPresets()[name];
+    if (!preset) {
+      ui.setStatus("Preset not found.");
+      return;
+    }
+    state = clone(preset);
+    ui.writeStateToUI(state);
+    ui.setStatus(`Loaded preset: ${name}.`);
+  });
+
+  ui.$("savePreset").addEventListener("click", async () => {
+    state = ui.readStateFromUI(state);
+    const key = `Custom ${new Date().toISOString().slice(0, 19)}`;
+    userPresets[key] = clone(state);
+    await savePresets(userPresets);
+    refreshPresetUI();
+    ui.$("presetSelect").value = key;
+    ui.setStatus(`Saved preset: ${key}.`);
+  });
 }
 
-function getState() {
-  return state;
-}
-
-function getTestState() {
-  var ts = presetMgr.defaultPreset();
-  ts.document.createNew = true;
-  ts.document.width = 1080;
-  ts.document.height = 1350;
-  ts.title.text = renderer.TEST_CONTENT.title;
-  ts.body.text = renderer.TEST_CONTENT.paragraph;
-  ts.footer.leftText  = renderer.TEST_CONTENT.footerLeft;
-  ts.footer.slashText = renderer.TEST_CONTENT.footerSlash;
-  ts.footer.rightText = renderer.TEST_CONTENT.footerRight;
-  ts.image = { entry: null, token: null, name: null };
-  return ts;
-}
-
-module.exports = {
-  init,
-  getState,
-  getTestState,
-  setStatus,
-};
+module.exports = { createApp };

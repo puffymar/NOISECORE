@@ -83,6 +83,8 @@ async function buildComposition(doc, state) {
     stroke: 4
   });
 
+  await applyOuterGlow(state.colors.border, state.fx.glow || 55, 28);
+
   await addText(contentGroup, "Title", state.content.title, {
     x: w / 2, y: 156,
     size: 86,
@@ -93,16 +95,18 @@ async function buildComposition(doc, state) {
 
   await placeImage(contentGroup, state);
 
-  await addText(contentGroup, "Body", state.content.body, {
-    x: 96, y: h - 382,
-    size: 35,
-    color: state.colors.body,
-    font: "CormorantGaramond-Regular",
-    justify: "left",
-    boxWidth: w - 192,
-    boxHeight: 300,
-    leading: 48
-  });
+  if (state.content.body) {
+    await addText(contentGroup, "Body", state.content.body, {
+      x: 96, y: h - 420,
+      size: 28,
+      color: state.colors.body,
+      font: "CormorantGaramond-Regular",
+      justify: "left",
+      boxWidth: w - 192,
+      boxHeight: 280,
+      leading: 40
+    });
+  }
 
   await addDivider(contentGroup, "Divider", state.colors.border, {
     x: 96, y: h - 170, w: w - 192, thickness: 3
@@ -205,6 +209,28 @@ async function addStrokeRect(group, name, spec) {
   await moveLayerIntoGroup(layer, group);
 }
 
+async function applyOuterGlow(hex, opacity, size) {
+  var c = rgb(hex);
+  await bp([{
+    _obj: "set",
+    _target: [
+      { _ref: "property", _property: "layerEffects" },
+      { _ref: "layer", _enum: "ordinal", _value: "targetEnum" }
+    ],
+    to: {
+      _obj: "layerEffects",
+      outerGlow: {
+        _obj: "outerGlow",
+        enabled: true,
+        mode: { _enum: "blendMode", _value: "screen" },
+        color: { _obj: "RGBColor", red: c.r, grain: c.g, blue: c.b },
+        opacity: { _unit: "percentUnit", _value: opacity },
+        blur: { _unit: "pixelsUnit", _value: size }
+      }
+    }
+  }]);
+}
+
 async function addText(group, name, text, spec) {
   if (!text) text = name;
   var c = rgb(spec.color);
@@ -294,9 +320,15 @@ async function addText(group, name, text, spec) {
 }
 
 async function placeImage(group, state) {
+  var w = state.doc.width;
+  var imgX = 110;
+  var imgY = 240;
+  var imgW = w - 220;
+  var imgH = 460;
+  var imgR = 20;
+
   if (!state.image.token) {
     var c = rgb("#1f1f28");
-    var w = state.doc.width;
     await bp([{
       _obj: "make",
       _target: [{ _ref: "contentLayer" }],
@@ -309,14 +341,14 @@ async function placeImage(group, state) {
         shape: {
           _obj: "rectangle",
           unitValueQuadVersion: 1,
-          top: { _unit: "pixelsUnit", _value: 240 },
-          left: { _unit: "pixelsUnit", _value: 56 },
-          bottom: { _unit: "pixelsUnit", _value: 700 },
-          right: { _unit: "pixelsUnit", _value: w - 56 },
-          topRight: { _unit: "pixelsUnit", _value: 16 },
-          topLeft: { _unit: "pixelsUnit", _value: 16 },
-          bottomLeft: { _unit: "pixelsUnit", _value: 16 },
-          bottomRight: { _unit: "pixelsUnit", _value: 16 }
+          top: { _unit: "pixelsUnit", _value: imgY },
+          left: { _unit: "pixelsUnit", _value: imgX },
+          bottom: { _unit: "pixelsUnit", _value: imgY + imgH },
+          right: { _unit: "pixelsUnit", _value: imgX + imgW },
+          topRight: { _unit: "pixelsUnit", _value: imgR },
+          topLeft: { _unit: "pixelsUnit", _value: imgR },
+          bottomLeft: { _unit: "pixelsUnit", _value: imgR },
+          bottomRight: { _unit: "pixelsUnit", _value: imgR }
         }
       }
     }]);
@@ -325,8 +357,16 @@ async function placeImage(group, state) {
       _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
       to: { _obj: "layer", name: "Image Placeholder" }
     }]);
-    var layer = app.activeDocument.activeLayers[0];
-    await moveLayerIntoGroup(layer, group);
+    var placeholderLayer = app.activeDocument.activeLayers[0];
+    await moveLayerIntoGroup(placeholderLayer, group);
+
+    await addStrokeRect(group, "Image Border", {
+      x: imgX, y: imgY, w: imgW, h: imgH,
+      radius: imgR,
+      color: state.colors.border,
+      stroke: 3
+    });
+    await applyOuterGlow(state.colors.border, 40, 14);
     return;
   }
 
@@ -347,6 +387,14 @@ async function placeImage(group, state) {
   }]);
   var placedLayer = app.activeDocument.activeLayers[0];
   await moveLayerIntoGroup(placedLayer, group);
+
+  await addStrokeRect(group, "Image Border", {
+    x: imgX, y: imgY, w: imgW, h: imgH,
+    radius: imgR,
+    color: state.colors.border,
+    stroke: 3
+  });
+  await applyOuterGlow(state.colors.border, 40, 14);
 }
 
 async function addDivider(group, name, color, spec) {

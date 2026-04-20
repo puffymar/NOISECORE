@@ -2,11 +2,11 @@ const photoshop = require("photoshop");
 const { app, core, action } = photoshop;
 
 function rgb(hex) {
-  const clean = hex.replace("#", "");
-  const h = clean.length === 3
-    ? clean.split("").map((c) => c + c).join("")
+  var clean = hex.replace("#", "");
+  var h = clean.length === 3
+    ? clean.split("").map(function(c) { return c + c; }).join("")
     : clean;
-  const n = parseInt(h, 16);
+  var n = parseInt(h, 16);
   return {
     r: (n >> 16) & 255,
     g: (n >> 8) & 255,
@@ -22,27 +22,40 @@ async function runModal(commandName, fn) {
   return core.executeAsModal(fn, { commandName });
 }
 
-async function moveLayerIntoGroup(layer, group) {
-  if (!layer || !group) return;
+async function moveLayerIntoGroup(group) {
+  if (!group) return;
+  var doc = app.activeDocument;
+  var layer = doc.activeLayers[0];
+  if (!layer) return;
   try {
     layer.move(group, photoshop.constants.ElementPlacement.PLACEINSIDE);
-  } catch (_) {
-    try {
-      await bp([{
-        _obj: "move",
-        _target: [{ _ref: "layer", _id: layer.id }],
-        to: { _ref: "layer", _id: group.id },
-        adjustment: false,
-        version: 5
-      }]);
-    } catch (__) {
-      console.error("moveLayerIntoGroup failed for", layer.name);
-    }
+    return;
+  } catch (_) {}
+  try {
+    await bp([{
+      _obj: "move",
+      _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
+      to: { _ref: "layer", _id: group.id },
+      adjustment: false,
+      version: 5
+    }]);
+  } catch (__) {
+    console.error("moveIntoGroup failed");
   }
 }
 
+async function selectLayerByName(name) {
+  try {
+    await bp([{
+      _obj: "select",
+      _target: [{ _ref: "layer", _name: name }],
+      makeVisible: false
+    }]);
+  } catch (_) {}
+}
+
 async function createDreamlogDocument(state) {
-  const doc = await app.createDocument({
+  var doc = await app.createDocument({
     width: state.doc.width,
     height: state.doc.height,
     resolution: state.doc.resolution,
@@ -55,7 +68,7 @@ async function createDreamlogDocument(state) {
 }
 
 async function rebuildActiveDreamlog(state) {
-  const doc = app.activeDocument;
+  var doc = app.activeDocument;
   if (!doc) throw new Error("No active document.");
   while (doc.layers.length) {
     await doc.layers[0].delete();
@@ -64,65 +77,78 @@ async function rebuildActiveDreamlog(state) {
 }
 
 async function buildComposition(doc, state) {
-  const bgGroup = await doc.createLayerGroup({ name: "BG" });
-  const frameGroup = await doc.createLayerGroup({ name: "Frame" });
-  const contentGroup = await doc.createLayerGroup({ name: "Content" });
-  const fxGroup = await doc.createLayerGroup({ name: "FX" });
-
-  await addSolid(bgGroup, "Background A", state.colors.bgA, "normal", 100);
-  await addSolid(bgGroup, "Background B", state.colors.bgB, "multiply", 68);
+  var bgGroup = await doc.createLayerGroup({ name: "BG" });
+  var frameGroup = await doc.createLayerGroup({ name: "Frame" });
+  var contentGroup = await doc.createLayerGroup({ name: "Content" });
+  var fxGroup = await doc.createLayerGroup({ name: "FX" });
 
   var w = state.doc.width;
   var h = state.doc.height;
 
-  await addStrokeRect(frameGroup, "Outer Border", {
-    x: 56, y: 56,
-    w: w - 112, h: h - 112,
-    radius: 24,
-    color: state.colors.border,
-    stroke: 4
-  });
+  // BG
+  await addSolid(bgGroup, "Background A", state.colors.bgA, "normal", 100);
+  await addSolid(bgGroup, "Background B", state.colors.bgB, "multiply", 68);
 
+  // Outer border
+  await addStrokeRect(frameGroup, "Outer Border", {
+    x: 56, y: 56, w: w - 112, h: h - 112,
+    radius: 24, color: state.colors.border, stroke: 4
+  });
   await applyOuterGlow(state.colors.border, state.fx.glow || 55, 28);
 
-  await addText(contentGroup, "Title", state.content.title, {
-    x: w / 2, y: 156,
-    size: 86,
-    color: state.colors.title,
-    font: "TrajanPro-Regular",
-    justify: "center"
-  });
-
-  await placeImage(contentGroup, state);
-
-  if (state.content.body) {
-    await addText(contentGroup, "Body", state.content.body, {
-      x: 96, y: h - 420,
-      size: 28,
-      color: state.colors.body,
-      font: "CormorantGaramond-Regular",
-      justify: "left",
-      boxWidth: w - 192,
-      boxHeight: 280,
-      leading: 40
+  // Title
+  try {
+    await addText(contentGroup, "Title", state.content.title || "UNTITLED", {
+      x: w / 2, y: 130,
+      size: 72, color: state.colors.title,
+      font: "TrajanPro-Regular", justify: "center"
     });
-  }
+  } catch (e) { console.error("Title failed:", e); }
 
-  await addDivider(contentGroup, "Divider", state.colors.border, {
-    x: 96, y: h - 170, w: w - 192, thickness: 3
-  });
+  // Image
+  try {
+    await placeImage(contentGroup, state);
+  } catch (e) { console.error("Image failed:", e); }
 
-  await addText(contentGroup, "Footer", "NOISECORE // " + (state.content.footerRight || "DREAMLOG"), {
-    x: w / 2, y: h - 130,
-    size: 31,
-    color: state.colors.footer,
-    font: "Cinzel-Regular",
-    justify: "center"
-  });
+  // Body
+  try {
+    if (state.content.body) {
+      await addText(contentGroup, "Body", state.content.body, {
+        x: 96, y: h - 420, size: 28,
+        color: state.colors.body, font: "CormorantGaramond-Regular",
+        justify: "left", boxWidth: w - 192, boxHeight: 280, leading: 40
+      });
+    }
+  } catch (e) { console.error("Body failed:", e); }
 
-  await addCrtOverlay(fxGroup, state);
-  await addGrainOverlay(fxGroup, state);
+  // Divider
+  try {
+    await addDivider(contentGroup, "Divider", state.colors.border, {
+      x: 96, y: h - 170, w: w - 192, thickness: 3
+    });
+  } catch (e) { console.error("Divider failed:", e); }
+
+  // Footer
+  try {
+    var footerText = "NOISECORE // " + (state.content.footerRight || "DREAMLOG");
+    await addText(contentGroup, "Footer", footerText, {
+      x: w / 2, y: h - 120, size: 28,
+      color: state.colors.footer, font: "Cinzel-Regular", justify: "center"
+    });
+  } catch (e) { console.error("Footer failed:", e); }
+
+  // FX overlays
+  try {
+    if (state.fx.crtOpacity > 0) {
+      await addSolid(fxGroup, "CRT Scanlines", "#7f7f7f", "softLight", state.fx.crtOpacity);
+    }
+    if (state.fx.grainOpacity > 0) {
+      await addSolid(fxGroup, "Film Grain", "#808080", "overlay", state.fx.grainOpacity);
+    }
+  } catch (e) { console.error("FX failed:", e); }
 }
+
+// ---- Solid fill layer ------------------------------------------------
 
 async function addSolid(group, name, hex, blendMode, opacity) {
   var c = rgb(hex);
@@ -137,30 +163,23 @@ async function addSolid(group, name, hex, blendMode, opacity) {
       }
     }
   }]);
-  var layer = app.activeDocument.activeLayers[0];
-  if (!layer) return;
+  var setDesc = {
+    _obj: "layer",
+    name: name,
+    opacity: { _unit: "percentUnit", _value: opacity }
+  };
+  if (blendMode && blendMode !== "normal") {
+    setDesc.mode = { _enum: "blendMode", _value: blendMode };
+  }
   await bp([{
     _obj: "set",
     _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
-    to: {
-      _obj: "layer",
-      name: name,
-      opacity: { _unit: "percentUnit", _value: opacity }
-    }
+    to: setDesc
   }]);
-  if (blendMode !== "normal") {
-    await bp([{
-      _obj: "set",
-      _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
-      to: {
-        _obj: "layer",
-        mode: { _enum: "blendMode", _value: blendMode }
-      }
-    }]);
-  }
-  layer = app.activeDocument.activeLayers[0];
-  await moveLayerIntoGroup(layer, group);
+  await moveLayerIntoGroup(group);
 }
+
+// ---- Stroke rectangle ------------------------------------------------
 
 async function addStrokeRect(group, name, spec) {
   var sc = rgb(spec.color);
@@ -205,74 +224,43 @@ async function addStrokeRect(group, name, spec) {
     _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
     to: { _obj: "layer", name: name }
   }]);
-  var layer = app.activeDocument.activeLayers[0];
-  await moveLayerIntoGroup(layer, group);
+  await moveLayerIntoGroup(group);
 }
+
+// ---- Outer glow effect -----------------------------------------------
 
 async function applyOuterGlow(hex, opacity, size) {
   var c = rgb(hex);
-  await bp([{
-    _obj: "set",
-    _target: [
-      { _ref: "property", _property: "layerEffects" },
-      { _ref: "layer", _enum: "ordinal", _value: "targetEnum" }
-    ],
-    to: {
-      _obj: "layerEffects",
-      outerGlow: {
-        _obj: "outerGlow",
-        enabled: true,
-        mode: { _enum: "blendMode", _value: "screen" },
-        color: { _obj: "RGBColor", red: c.r, grain: c.g, blue: c.b },
-        opacity: { _unit: "percentUnit", _value: opacity },
-        blur: { _unit: "pixelsUnit", _value: size }
+  try {
+    await bp([{
+      _obj: "set",
+      _target: [
+        { _ref: "property", _property: "layerEffects" },
+        { _ref: "layer", _enum: "ordinal", _value: "targetEnum" }
+      ],
+      to: {
+        _obj: "layerEffects",
+        outerGlow: {
+          _obj: "outerGlow",
+          enabled: true,
+          mode: { _enum: "blendMode", _value: "screen" },
+          color: { _obj: "RGBColor", red: c.r, grain: c.g, blue: c.b },
+          opacity: { _unit: "percentUnit", _value: opacity },
+          blur: { _unit: "pixelsUnit", _value: size }
+        }
       }
-    }
-  }]);
+    }]);
+  } catch (e) { console.error("applyOuterGlow failed:", e); }
 }
+
+// ---- Text layer (all-in-one make) ------------------------------------
 
 async function addText(group, name, text, spec) {
   if (!text) text = name;
   var c = rgb(spec.color);
+  var just = spec.justify === "center" ? "center" : spec.justify === "right" ? "right" : "left";
 
-  if (spec.boxWidth && spec.boxHeight) {
-    await bp([{
-      _obj: "make",
-      _target: [{ _ref: "textLayer" }],
-      using: {
-        _obj: "textLayer",
-        textKey: text,
-        textShape: [{
-          _obj: "textShape",
-          char: { _enum: "char", _value: "box" },
-          bounds: {
-            _obj: "rectangle",
-            top: { _unit: "pixelsUnit", _value: spec.y },
-            left: { _unit: "pixelsUnit", _value: spec.x },
-            bottom: { _unit: "pixelsUnit", _value: spec.y + spec.boxHeight },
-            right: { _unit: "pixelsUnit", _value: spec.x + spec.boxWidth }
-          },
-          orientation: { _enum: "orientation", _value: "horizontal" }
-        }]
-      }
-    }]);
-  } else {
-    await bp([{
-      _obj: "make",
-      _target: [{ _ref: "textLayer" }],
-      using: {
-        _obj: "textLayer",
-        textKey: text,
-        textClickPoint: {
-          _obj: "paint",
-          horizontal: { _unit: "pixelsUnit", _value: spec.x },
-          vertical: { _unit: "pixelsUnit", _value: spec.y }
-        }
-      }
-    }]);
-  }
-
-  var styleDesc = {
+  var textStyle = {
     _obj: "textStyle",
     fontPostScriptName: spec.font || "ArialMT",
     size: { _unit: "pointsUnit", _value: spec.size },
@@ -280,33 +268,55 @@ async function addText(group, name, text, spec) {
     antiAlias: { _enum: "antiAliasType", _value: "antiAliasSmooth" }
   };
   if (spec.leading) {
-    styleDesc.autoLeading = false;
-    styleDesc.leading = { _unit: "pointsUnit", _value: spec.leading };
+    textStyle.autoLeading = false;
+    textStyle.leading = { _unit: "pointsUnit", _value: spec.leading };
   }
 
-  var just = spec.justify === "center" ? "center" : spec.justify === "right" ? "right" : "left";
+  var paragraphStyle = {
+    _obj: "paragraphStyle",
+    align: { _enum: "alignmentType", _value: just }
+  };
+
+  var textDesc = {
+    _obj: "textLayer",
+    textKey: text,
+    textStyleRange: [{
+      _obj: "textStyleRange",
+      from: 0, to: text.length,
+      textStyle: textStyle
+    }],
+    paragraphStyleRange: [{
+      _obj: "paragraphStyleRange",
+      from: 0, to: text.length,
+      paragraphStyle: paragraphStyle
+    }]
+  };
+
+  if (spec.boxWidth && spec.boxHeight) {
+    textDesc.textShape = [{
+      _obj: "textShape",
+      char: { _enum: "char", _value: "box" },
+      bounds: {
+        _obj: "rectangle",
+        top: { _unit: "pixelsUnit", _value: spec.y },
+        left: { _unit: "pixelsUnit", _value: spec.x },
+        bottom: { _unit: "pixelsUnit", _value: spec.y + spec.boxHeight },
+        right: { _unit: "pixelsUnit", _value: spec.x + spec.boxWidth }
+      },
+      orientation: { _enum: "orientation", _value: "horizontal" }
+    }];
+  } else {
+    textDesc.textClickPoint = {
+      _obj: "paint",
+      horizontal: { _unit: "pixelsUnit", _value: spec.x },
+      vertical: { _unit: "pixelsUnit", _value: spec.y }
+    };
+  }
 
   await bp([{
-    _obj: "set",
-    _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
-    to: {
-      _obj: "textLayer",
-      textStyleRange: [{
-        _obj: "textStyleRange",
-        from: 0,
-        to: text.length,
-        textStyle: styleDesc
-      }],
-      paragraphStyleRange: [{
-        _obj: "paragraphStyleRange",
-        from: 0,
-        to: text.length,
-        paragraphStyle: {
-          _obj: "paragraphStyle",
-          align: { _enum: "alignmentType", _value: just }
-        }
-      }]
-    }
+    _obj: "make",
+    _target: [{ _ref: "textLayer" }],
+    using: textDesc
   }]);
 
   await bp([{
@@ -315,9 +325,10 @@ async function addText(group, name, text, spec) {
     to: { _obj: "layer", name: name }
   }]);
 
-  var layer = app.activeDocument.activeLayers[0];
-  await moveLayerIntoGroup(layer, group);
+  await moveLayerIntoGroup(group);
 }
+
+// ---- Image placement -------------------------------------------------
 
 async function placeImage(group, state) {
   var w = state.doc.width;
@@ -327,7 +338,7 @@ async function placeImage(group, state) {
   var imgH = 460;
   var imgR = 20;
 
-  if (!state.image.token) {
+  if (!state.image || !state.image.token) {
     var c = rgb("#1f1f28");
     await bp([{
       _obj: "make",
@@ -357,22 +368,21 @@ async function placeImage(group, state) {
       _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
       to: { _obj: "layer", name: "Image Placeholder" }
     }]);
-    var placeholderLayer = app.activeDocument.activeLayers[0];
-    await moveLayerIntoGroup(placeholderLayer, group);
+    await moveLayerIntoGroup(group);
 
     await addStrokeRect(group, "Image Border", {
       x: imgX, y: imgY, w: imgW, h: imgH,
-      radius: imgR,
-      color: state.colors.border,
-      stroke: 3
+      radius: imgR, color: state.colors.border, stroke: 3
     });
     await applyOuterGlow(state.colors.border, 40, 14);
     return;
   }
 
+  // Place the picked image using its native path
+  var imgPath = state.image.nativePath || state.image.token;
   await bp([{
     _obj: "placeEvent",
-    null: { _path: state.image.token, _kind: "local" },
+    null: { _path: imgPath, _kind: "local" },
     freeTransformCenterState: { _enum: "quadCenterState", _value: "QCSAverage" },
     offset: {
       _obj: "offset",
@@ -385,17 +395,16 @@ async function placeImage(group, state) {
     _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
     to: { _obj: "layer", name: "Image" }
   }]);
-  var placedLayer = app.activeDocument.activeLayers[0];
-  await moveLayerIntoGroup(placedLayer, group);
+  await moveLayerIntoGroup(group);
 
   await addStrokeRect(group, "Image Border", {
     x: imgX, y: imgY, w: imgW, h: imgH,
-    radius: imgR,
-    color: state.colors.border,
-    stroke: 3
+    radius: imgR, color: state.colors.border, stroke: 3
   });
   await applyOuterGlow(state.colors.border, 40, 14);
 }
+
+// ---- Divider ---------------------------------------------------------
 
 async function addDivider(group, name, color, spec) {
   var c = rgb(color);
@@ -427,16 +436,18 @@ async function addDivider(group, name, color, spec) {
     _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
     to: { _obj: "layer", name: name }
   }]);
-  var layer = app.activeDocument.activeLayers[0];
-  await moveLayerIntoGroup(layer, group);
+  await moveLayerIntoGroup(group);
+  await applyOuterGlow(color, 30, 6);
 }
+
+// ---- CRT / Grain overlays --------------------------------------------
 
 async function addCrtOverlay(group, state) {
   await addSolid(group, "CRT Scanlines", "#7f7f7f", "softLight", state.fx.crtOpacity);
 }
 
 async function addGrainOverlay(group, state) {
-  await addSolid(group, "Film Grain " + state.fx.grainSeed, "#808080", "overlay", state.fx.grainOpacity);
+  await addSolid(group, "Film Grain", "#808080", "overlay", state.fx.grainOpacity);
 }
 
 module.exports = {

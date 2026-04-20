@@ -35,7 +35,7 @@ async function createApp() {
     try {
       const file = await pickImageFile();
       if (!file) return;
-      state.image = { token: await file.createSessionToken(), name: file.name };
+      state.image = { token: await file.createSessionToken(), nativePath: file.nativePath, name: file.name };
       writeStateToUI(state);
       setStatus(`Image selected: ${file.name}`);
     } catch (error) {

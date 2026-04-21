@@ -29,7 +29,13 @@ async function loadPresets() {
 }
 
 async function pickImageFile() {
-  return localFileSystem.getFileForOpening({ types: ["jpg", "jpeg", "png", "webp", "tif", "tiff"] });
+  var file = await localFileSystem.getFileForOpening({ types: ["jpg", "jpeg", "png", "webp", "tif", "tiff"] });
+  if (!file) return null;
+  return {
+    name: file.name,
+    nativePath: file.nativePath,
+    token: localFileSystem.createSessionToken(file)
+  };
 }
 
 async function exportConfigJson(state) {

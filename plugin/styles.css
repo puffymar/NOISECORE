@@ -1,11 +1,14 @@
 * { box-sizing: border-box; }
+html { height: 100%; overflow: hidden; }
 body {
   margin: 0;
+  height: 100%;
   font-family: "Adobe Clean", system-ui, sans-serif;
   color: #f4ebdf;
   background: #101014;
+  overflow: hidden;
 }
-.panel { padding: 12px; overflow-y: auto; height: 100%; }
+.panel { padding: 12px; overflow-y: auto; position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
 h1 { margin: 0; font-size: 18px; color: #ff6a3a; }
 .sub { margin: 2px 0 12px; color: #b9a99e; }
 section {

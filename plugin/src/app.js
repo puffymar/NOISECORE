@@ -33,11 +33,11 @@ async function createApp() {
 
   $("pickImage").addEventListener("click", async () => {
     try {
-      const file = await pickImageFile();
-      if (!file) return;
-      state.image = { token: await file.createSessionToken(), nativePath: file.nativePath, name: file.name };
+      const result = await pickImageFile();
+      if (!result) return;
+      state.image = result;
       writeStateToUI(state);
-      setStatus(`Image selected: ${file.name}`);
+      setStatus(`Image selected: ${result.name}`);
     } catch (error) {
       setStatus(`Image selection failed: ${error.message}`);
     }

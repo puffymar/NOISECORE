@@ -7,55 +7,23 @@ function rgb(hex) {
     ? clean.split("").map(function(c) { return c + c; }).join("")
     : clean;
   var n = parseInt(h, 16);
-  return {
-    r: (n >> 16) & 255,
-    g: (n >> 8) & 255,
-    b: n & 255
-  };
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
 
-function bp(descriptors) {
-  return action.batchPlay(descriptors, {});
+function bp(desc) {
+  return action.batchPlay(desc, {});
 }
 
-async function runModal(commandName, fn) {
-  return core.executeAsModal(fn, { commandName });
+function pxToPt(px, dpi) {
+  return Math.max(1, Math.round(px * 72 / dpi));
 }
 
-async function moveLayerIntoGroup(group) {
-  if (!group) return;
-  var doc = app.activeDocument;
-  var layer = doc.activeLayers[0];
-  if (!layer) return;
-  try {
-    layer.move(group, photoshop.constants.ElementPlacement.PLACEINSIDE);
-    return;
-  } catch (_) {}
-  try {
-    await bp([{
-      _obj: "move",
-      _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
-      to: { _ref: "layer", _id: group.id },
-      adjustment: false,
-      version: 5
-    }]);
-  } catch (__) {
-    console.error("moveIntoGroup failed");
-  }
-}
-
-async function selectLayerByName(name) {
-  try {
-    await bp([{
-      _obj: "select",
-      _target: [{ _ref: "layer", _name: name }],
-      makeVisible: false
-    }]);
-  } catch (_) {}
+async function runModal(name, fn) {
+  return core.executeAsModal(fn, { commandName: name });
 }
 
 async function createDreamlogDocument(state) {
-  var doc = await app.createDocument({
+  await app.createDocument({
     width: state.doc.width,
     height: state.doc.height,
     resolution: state.doc.resolution,
@@ -63,94 +31,109 @@ async function createDreamlogDocument(state) {
     fill: "transparent",
     name: "Noisecore Dreamlog"
   });
-  await buildComposition(doc, state);
-  return doc;
+  await buildComposition(state);
 }
 
 async function rebuildActiveDreamlog(state) {
   var doc = app.activeDocument;
   if (!doc) throw new Error("No active document.");
-  while (doc.layers.length) {
-    await doc.layers[0].delete();
-  }
-  await buildComposition(doc, state);
+  while (doc.layers.length) { await doc.layers[0].delete(); }
+  await buildComposition(state);
 }
 
-async function buildComposition(doc, state) {
-  var bgGroup = await doc.createLayerGroup({ name: "BG" });
-  var frameGroup = await doc.createLayerGroup({ name: "Frame" });
-  var contentGroup = await doc.createLayerGroup({ name: "Content" });
-  var fxGroup = await doc.createLayerGroup({ name: "FX" });
-
+async function buildComposition(state) {
   var w = state.doc.width;
   var h = state.doc.height;
+  var dpi = state.doc.resolution || 300;
 
-  // BG
-  await addSolid(bgGroup, "Background A", state.colors.bgA, "normal", 100);
-  await addSolid(bgGroup, "Background B", state.colors.bgB, "multiply", 68);
+  var titlePt = pxToPt(60, dpi);
+  var bodyPt = pxToPt(24, dpi);
+  var bodyLeadPt = pxToPt(36, dpi);
+  var footerPt = pxToPt(24, dpi);
 
-  // Outer border
-  await addStrokeRect(frameGroup, "Outer Border", {
-    x: 56, y: 56, w: w - 112, h: h - 112,
-    radius: 24, color: state.colors.border, stroke: 4
-  });
-  await applyOuterGlow(state.colors.border, state.fx.glow || 55, 28);
-
-  // Title
+  // 1. Background fills (bottom of stack)
   try {
-    await addText(contentGroup, "Title", state.content.title || "UNTITLED", {
-      x: w / 2, y: 130,
-      size: 72, color: state.colors.title,
-      font: "TrajanPro-Regular", justify: "center"
+    await makeSolidFill("Background A", state.colors.bgA, "normal", 100);
+    await makeSolidFill("Background B", state.colors.bgB, "multiply", 68);
+  } catch (e) { console.error("BG:", e); }
+
+  // 2. Outer border + glow
+  try {
+    await makeStrokeRect("Outer Border", {
+      x: 56, y: 56, w: w - 112, h: h - 112,
+      radius: 24, color: state.colors.border, stroke: 4
     });
-  } catch (e) { console.error("Title failed:", e); }
+    await addOuterGlow(state.colors.border, state.fx.glow || 55, 32);
+  } catch (e) { console.error("Border:", e); }
 
-  // Image
+  // 3. Image area
+  var imgX = 110, imgY = 240, imgW = w - 220, imgH = 460, imgR = 20;
   try {
-    await placeImage(contentGroup, state);
-  } catch (e) { console.error("Image failed:", e); }
+    if (state.image && state.image.token) {
+      await placeLinkedImage(state.image);
+    } else {
+      await makeSolidRect("Image Placeholder", "#1f1f28", imgX, imgY, imgW, imgH, imgR);
+    }
+    await makeStrokeRect("Image Border", {
+      x: imgX, y: imgY, w: imgW, h: imgH,
+      radius: imgR, color: state.colors.border, stroke: 3
+    });
+    await addOuterGlow(state.colors.border, 40, 16);
+  } catch (e) { console.error("Image:", e); }
 
-  // Body
+  // 4. Title
+  try {
+    await makePointText("Title", state.content.title || "UNTITLED", {
+      xPct: 50, yPct: (140 / h) * 100,
+      size: titlePt, color: state.colors.title,
+      font: "TrajanPro-Regular", align: "center"
+    });
+  } catch (e) { console.error("Title:", e); }
+
+  // 5. Body paragraph
   try {
     if (state.content.body) {
-      await addText(contentGroup, "Body", state.content.body, {
-        x: 96, y: h - 420, size: 28,
-        color: state.colors.body, font: "CormorantGaramond-Regular",
-        justify: "left", boxWidth: w - 192, boxHeight: 280, leading: 40
+      await makeBoxText("Body", state.content.body, {
+        top: h - 420, left: 96, bottom: h - 180, right: w - 96,
+        size: bodyPt, leading: bodyLeadPt,
+        color: state.colors.body,
+        font: "CormorantGaramond-Regular", align: "left"
       });
     }
-  } catch (e) { console.error("Body failed:", e); }
+  } catch (e) { console.error("Body:", e); }
 
-  // Divider
+  // 6. Divider + glow
   try {
-    await addDivider(contentGroup, "Divider", state.colors.border, {
-      x: 96, y: h - 170, w: w - 192, thickness: 3
-    });
-  } catch (e) { console.error("Divider failed:", e); }
+    await makeSolidRect("Divider", state.colors.border, 96, h - 170, w - 192, 3, 0);
+    await addOuterGlow(state.colors.border, 35, 8);
+  } catch (e) { console.error("Divider:", e); }
 
-  // Footer
+  // 7. Footer
   try {
-    var footerText = "NOISECORE // " + (state.content.footerRight || "DREAMLOG");
-    await addText(contentGroup, "Footer", footerText, {
-      x: w / 2, y: h - 120, size: 28,
-      color: state.colors.footer, font: "Cinzel-Regular", justify: "center"
+    var ft = "NOISECORE // " + (state.content.footerRight || "DREAMLOG");
+    await makePointText("Footer", ft, {
+      xPct: 50, yPct: ((h - 100) / h) * 100,
+      size: footerPt, color: state.colors.footer,
+      font: "Cinzel-Regular", align: "center"
     });
-  } catch (e) { console.error("Footer failed:", e); }
+  } catch (e) { console.error("Footer:", e); }
 
-  // FX overlays
+  // 8. CRT scanlines
   try {
     if (state.fx.crtOpacity > 0) {
-      await addSolid(fxGroup, "CRT Scanlines", "#7f7f7f", "softLight", state.fx.crtOpacity);
+      await makeNoiseOverlay("CRT Scanlines", state.fx.crtOpacity, "softLight", true, w);
     }
+  } catch (e) { console.error("CRT:", e); }
+
+  // 9. Film grain
+  try {
     if (state.fx.grainOpacity > 0) {
-      await addSolid(fxGroup, "Film Grain", "#808080", "overlay", state.fx.grainOpacity);
+      await makeNoiseOverlay("Film Grain", state.fx.grainOpacity, "overlay", false, 0);
     }
-  } catch (e) { console.error("FX failed:", e); }
+  } catch (e) { console.error("Grain:", e); }
 }
 
-// ---- Solid fill layer ------------------------------------------------
-
-async function addSolid(group, name, hex, blendMode, opacity) {
+async function makeSolidFill(name, hex, blendMode, opacity) {
   var c = rgb(hex);
   await bp([{
     _obj: "make",
@@ -163,25 +146,48 @@ async function addSolid(group, name, hex, blendMode, opacity) {
       }
     }
   }]);
-  var setDesc = {
-    _obj: "layer",
-    name: name,
-    opacity: { _unit: "percentUnit", _value: opacity }
-  };
-  if (blendMode && blendMode !== "normal") {
-    setDesc.mode = { _enum: "blendMode", _value: blendMode };
-  }
+  var desc = { _obj: "layer", name: name, opacity: { _unit: "percentUnit", _value: opacity } };
+  if (blendMode !== "normal") desc.mode = { _enum: "blendMode", _value: blendMode };
   await bp([{
     _obj: "set",
     _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
-    to: setDesc
+    to: desc
   }]);
-  await moveLayerIntoGroup(group);
 }
 
-// ---- Stroke rectangle ------------------------------------------------
+async function makeSolidRect(name, hex, x, y, w, h, radius) {
+  var c = rgb(hex);
+  await bp([{
+    _obj: "make",
+    _target: [{ _ref: "contentLayer" }],
+    using: {
+      _obj: "contentLayer",
+      type: {
+        _obj: "solidColorLayer",
+        color: { _obj: "RGBColor", red: c.r, grain: c.g, blue: c.b }
+      },
+      shape: {
+        _obj: "rectangle",
+        unitValueQuadVersion: 1,
+        top: { _unit: "pixelsUnit", _value: y },
+        left: { _unit: "pixelsUnit", _value: x },
+        bottom: { _unit: "pixelsUnit", _value: y + h },
+        right: { _unit: "pixelsUnit", _value: x + w },
+        topRight: { _unit: "pixelsUnit", _value: radius || 0 },
+        topLeft: { _unit: "pixelsUnit", _value: radius || 0 },
+        bottomLeft: { _unit: "pixelsUnit", _value: radius || 0 },
+        bottomRight: { _unit: "pixelsUnit", _value: radius || 0 }
+      }
+    }
+  }]);
+  await bp([{
+    _obj: "set",
+    _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
+    to: { _obj: "layer", name: name }
+  }]);
+}
 
-async function addStrokeRect(group, name, spec) {
+async function makeStrokeRect(name, spec) {
   var sc = rgb(spec.color);
   await bp([{
     _obj: "make",
@@ -199,10 +205,10 @@ async function addStrokeRect(group, name, spec) {
         left: { _unit: "pixelsUnit", _value: spec.x },
         bottom: { _unit: "pixelsUnit", _value: spec.y + spec.h },
         right: { _unit: "pixelsUnit", _value: spec.x + spec.w },
-        topRight: { _unit: "pixelsUnit", _value: spec.radius },
-        topLeft: { _unit: "pixelsUnit", _value: spec.radius },
-        bottomLeft: { _unit: "pixelsUnit", _value: spec.radius },
-        bottomRight: { _unit: "pixelsUnit", _value: spec.radius }
+        topRight: { _unit: "pixelsUnit", _value: spec.radius || 0 },
+        topLeft: { _unit: "pixelsUnit", _value: spec.radius || 0 },
+        bottomLeft: { _unit: "pixelsUnit", _value: spec.radius || 0 },
+        bottomRight: { _unit: "pixelsUnit", _value: spec.radius || 0 }
       },
       strokeStyle: {
         _obj: "strokeStyle",
@@ -224,12 +230,9 @@ async function addStrokeRect(group, name, spec) {
     _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
     to: { _obj: "layer", name: name }
   }]);
-  await moveLayerIntoGroup(group);
 }
 
-// ---- Outer glow effect -----------------------------------------------
-
-async function applyOuterGlow(hex, opacity, size) {
+async function addOuterGlow(hex, opacity, size) {
   var c = rgb(hex);
   try {
     await bp([{
@@ -250,139 +253,122 @@ async function applyOuterGlow(hex, opacity, size) {
         }
       }
     }]);
-  } catch (e) { console.error("applyOuterGlow failed:", e); }
+  } catch (e) { console.error("glow:", e); }
 }
 
-// ---- Text layer (all-in-one make) ------------------------------------
-
-async function addText(group, name, text, spec) {
-  if (!text) text = name;
+async function makePointText(name, text, spec) {
   var c = rgb(spec.color);
-  var just = spec.justify === "center" ? "center" : spec.justify === "right" ? "right" : "left";
-
-  var textStyle = {
+  var ts = {
     _obj: "textStyle",
     fontPostScriptName: spec.font || "ArialMT",
     size: { _unit: "pointsUnit", _value: spec.size },
     color: { _obj: "RGBColor", red: c.r, grain: c.g, blue: c.b },
     antiAlias: { _enum: "antiAliasType", _value: "antiAliasSmooth" }
   };
-  if (spec.leading) {
-    textStyle.autoLeading = false;
-    textStyle.leading = { _unit: "pointsUnit", _value: spec.leading };
-  }
 
-  var paragraphStyle = {
-    _obj: "paragraphStyle",
-    align: { _enum: "alignmentType", _value: just }
-  };
-
-  var textDesc = {
+  var desc = {
     _obj: "textLayer",
     textKey: text,
+    warp: { _obj: "warp", warpStyle: { _enum: "warpStyle", _value: "warpNone" } },
+    textClickPoint: {
+      _obj: "paint",
+      horizontal: { _unit: "percentUnit", _value: spec.xPct },
+      vertical: { _unit: "percentUnit", _value: spec.yPct }
+    },
+    antiAlias: { _enum: "antiAliasType", _value: "antiAliasSmooth" },
     textStyleRange: [{
       _obj: "textStyleRange",
       from: 0, to: text.length,
-      textStyle: textStyle
+      textStyle: ts
     }],
     paragraphStyleRange: [{
       _obj: "paragraphStyleRange",
       from: 0, to: text.length,
-      paragraphStyle: paragraphStyle
+      paragraphStyle: {
+        _obj: "paragraphStyle",
+        align: { _enum: "alignmentType", _value: spec.align || "center" }
+      }
     }]
   };
 
-  if (spec.boxWidth && spec.boxHeight) {
-    textDesc.textShape = [{
-      _obj: "textShape",
-      char: { _enum: "char", _value: "box" },
-      bounds: {
-        _obj: "rectangle",
-        top: { _unit: "pixelsUnit", _value: spec.y },
-        left: { _unit: "pixelsUnit", _value: spec.x },
-        bottom: { _unit: "pixelsUnit", _value: spec.y + spec.boxHeight },
-        right: { _unit: "pixelsUnit", _value: spec.x + spec.boxWidth }
-      },
-      orientation: { _enum: "orientation", _value: "horizontal" }
-    }];
-  } else {
-    textDesc.textClickPoint = {
-      _obj: "paint",
-      horizontal: { _unit: "pixelsUnit", _value: spec.x },
-      vertical: { _unit: "pixelsUnit", _value: spec.y }
-    };
+  try {
+    await bp([{ _obj: "make", _target: [{ _ref: "textLayer" }], using: desc }]);
+  } catch (e) {
+    desc.textStyleRange[0].textStyle.fontPostScriptName = "ArialMT";
+    try {
+      await bp([{ _obj: "make", _target: [{ _ref: "textLayer" }], using: desc }]);
+    } catch (e2) { console.error("text " + name + ":", e2); return; }
   }
-
-  await bp([{
-    _obj: "make",
-    _target: [{ _ref: "textLayer" }],
-    using: textDesc
-  }]);
-
   await bp([{
     _obj: "set",
     _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
     to: { _obj: "layer", name: name }
   }]);
-
-  await moveLayerIntoGroup(group);
 }
 
-// ---- Image placement -------------------------------------------------
+async function makeBoxText(name, text, spec) {
+  var c = rgb(spec.color);
+  var ts = {
+    _obj: "textStyle",
+    fontPostScriptName: spec.font || "ArialMT",
+    size: { _unit: "pointsUnit", _value: spec.size },
+    color: { _obj: "RGBColor", red: c.r, grain: c.g, blue: c.b },
+    antiAlias: { _enum: "antiAliasType", _value: "antiAliasSmooth" },
+    autoLeading: false,
+    leading: { _unit: "pointsUnit", _value: spec.leading || spec.size + 2 }
+  };
 
-async function placeImage(group, state) {
-  var w = state.doc.width;
-  var imgX = 110;
-  var imgY = 240;
-  var imgW = w - 220;
-  var imgH = 460;
-  var imgR = 20;
-
-  if (!state.image || !state.image.token) {
-    var c = rgb("#1f1f28");
-    await bp([{
-      _obj: "make",
-      _target: [{ _ref: "contentLayer" }],
-      using: {
-        _obj: "contentLayer",
-        type: {
-          _obj: "solidColorLayer",
-          color: { _obj: "RGBColor", red: c.r, grain: c.g, blue: c.b }
-        },
-        shape: {
-          _obj: "rectangle",
-          unitValueQuadVersion: 1,
-          top: { _unit: "pixelsUnit", _value: imgY },
-          left: { _unit: "pixelsUnit", _value: imgX },
-          bottom: { _unit: "pixelsUnit", _value: imgY + imgH },
-          right: { _unit: "pixelsUnit", _value: imgX + imgW },
-          topRight: { _unit: "pixelsUnit", _value: imgR },
-          topLeft: { _unit: "pixelsUnit", _value: imgR },
-          bottomLeft: { _unit: "pixelsUnit", _value: imgR },
-          bottomRight: { _unit: "pixelsUnit", _value: imgR }
-        }
+  var desc = {
+    _obj: "textLayer",
+    textKey: text,
+    warp: { _obj: "warp", warpStyle: { _enum: "warpStyle", _value: "warpNone" } },
+    textShape: [{
+      _obj: "textShape",
+      char: { _enum: "char", _value: "box" },
+      bounds: {
+        _obj: "rectangle",
+        top: { _unit: "pixelsUnit", _value: spec.top },
+        left: { _unit: "pixelsUnit", _value: spec.left },
+        bottom: { _unit: "pixelsUnit", _value: spec.bottom },
+        right: { _unit: "pixelsUnit", _value: spec.right }
+      },
+      orientation: { _enum: "orientation", _value: "horizontal" }
+    }],
+    textStyleRange: [{
+      _obj: "textStyleRange",
+      from: 0, to: text.length,
+      textStyle: ts
+    }],
+    paragraphStyleRange: [{
+      _obj: "paragraphStyleRange",
+      from: 0, to: text.length,
+      paragraphStyle: {
+        _obj: "paragraphStyle",
+        align: { _enum: "alignmentType", _value: spec.align || "left" }
       }
-    }]);
-    await bp([{
-      _obj: "set",
-      _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
-      to: { _obj: "layer", name: "Image Placeholder" }
-    }]);
-    await moveLayerIntoGroup(group);
+    }]
+  };
 
-    await addStrokeRect(group, "Image Border", {
-      x: imgX, y: imgY, w: imgW, h: imgH,
-      radius: imgR, color: state.colors.border, stroke: 3
-    });
-    await applyOuterGlow(state.colors.border, 40, 14);
-    return;
+  try {
+    await bp([{ _obj: "make", _target: [{ _ref: "textLayer" }], using: desc }]);
+  } catch (e) {
+    desc.textStyleRange[0].textStyle.fontPostScriptName = "ArialMT";
+    try {
+      await bp([{ _obj: "make", _target: [{ _ref: "textLayer" }], using: desc }]);
+    } catch (e2) { console.error("text " + name + ":", e2); return; }
   }
+  await bp([{
+    _obj: "set",
+    _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
+    to: { _obj: "layer", name: name }
+  }]);
+}
 
-  // Place the picked image using its native path
-  var imgPath = state.image.nativePath || state.image.token;
+async function placeLinkedImage(imageInfo) {
+  var path = imageInfo.nativePath || imageInfo.token;
   await bp([{
     _obj: "placeEvent",
-    null: { _path: imgPath, _kind: "local" },
+    null: { _path: path, _kind: "local" },
     freeTransformCenterState: { _enum: "quadCenterState", _value: "QCSAverage" },
     offset: {
       _obj: "offset",
@@ -395,63 +381,51 @@ async function placeImage(group, state) {
     _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
     to: { _obj: "layer", name: "Image" }
   }]);
-  await moveLayerIntoGroup(group);
-
-  await addStrokeRect(group, "Image Border", {
-    x: imgX, y: imgY, w: imgW, h: imgH,
-    radius: imgR, color: state.colors.border, stroke: 3
-  });
-  await applyOuterGlow(state.colors.border, 40, 14);
 }
 
-// ---- Divider ---------------------------------------------------------
-
-async function addDivider(group, name, color, spec) {
-  var c = rgb(color);
+async function makeNoiseOverlay(name, opacity, blendMode, useMotionBlur, blurDist) {
   await bp([{
     _obj: "make",
-    _target: [{ _ref: "contentLayer" }],
-    using: {
-      _obj: "contentLayer",
-      type: {
-        _obj: "solidColorLayer",
-        color: { _obj: "RGBColor", red: c.r, grain: c.g, blue: c.b }
-      },
-      shape: {
-        _obj: "rectangle",
-        unitValueQuadVersion: 1,
-        top: { _unit: "pixelsUnit", _value: spec.y },
-        left: { _unit: "pixelsUnit", _value: spec.x },
-        bottom: { _unit: "pixelsUnit", _value: spec.y + spec.thickness },
-        right: { _unit: "pixelsUnit", _value: spec.x + spec.w },
-        topRight: { _unit: "pixelsUnit", _value: 0 },
-        topLeft: { _unit: "pixelsUnit", _value: 0 },
-        bottomLeft: { _unit: "pixelsUnit", _value: 0 },
-        bottomRight: { _unit: "pixelsUnit", _value: 0 }
-      }
-    }
+    _target: [{ _ref: "layer" }],
+    using: { _obj: "layer", name: name }
   }]);
+
+  await bp([{
+    _obj: "fill",
+    using: { _enum: "fillContents", _value: "color" },
+    color: { _obj: "RGBColor", red: 128, grain: 128, blue: 128 },
+    opacity: { _unit: "percentUnit", _value: 100 },
+    mode: { _enum: "blendMode", _value: "normal" }
+  }]);
+
+  try {
+    await bp([{
+      _obj: "addNoise",
+      distribution: { _enum: "distribution", _value: "gaussian" },
+      amount: useMotionBlur ? 50 : 30,
+      monochromatic: true
+    }]);
+  } catch (e) { console.error("addNoise:", e); }
+
+  if (useMotionBlur && blurDist > 0) {
+    try {
+      await bp([{
+        _obj: "motionBlur",
+        angle: 0,
+        distance: blurDist
+      }]);
+    } catch (e) { console.error("motionBlur:", e); }
+  }
+
   await bp([{
     _obj: "set",
     _target: [{ _ref: "layer", _enum: "ordinal", _value: "targetEnum" }],
-    to: { _obj: "layer", name: name }
+    to: {
+      _obj: "layer",
+      mode: { _enum: "blendMode", _value: blendMode },
+      opacity: { _unit: "percentUnit", _value: opacity }
+    }
   }]);
-  await moveLayerIntoGroup(group);
-  await applyOuterGlow(color, 30, 6);
 }
 
-// ---- CRT / Grain overlays --------------------------------------------
-
-async function addCrtOverlay(group, state) {
-  await addSolid(group, "CRT Scanlines", "#7f7f7f", "softLight", state.fx.crtOpacity);
-}
-
-async function addGrainOverlay(group, state) {
-  await addSolid(group, "Film Grain", "#808080", "overlay", state.fx.grainOpacity);
-}
-
-module.exports = {
-  runModal,
-  createDreamlogDocument,
-  rebuildActiveDreamlog
-};
+module.exports = { runModal, createDreamlogDocument, rebuildActiveDreamlog };

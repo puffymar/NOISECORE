@@ -1,41 +1,24 @@
-# NOISECORE
+# Noisecore Dreamlog — Comprehensive UXP Plugin
 
-card generator for instagram and tiktok posts.
+This repository now contains a rebuilt, from-scratch Photoshop UXP plugin for generating a full "Noisecore / Dreamlog" card workflow.
 
-takes a title, body text, and optionally a photo — outputs ready-to-post cards with grain, scanlines, chromatic aberration, and glowing red borders.
+## What this version includes
 
-## setup
+- Single-click document generation for a full Dreamlog composition
+- Structured groups/layers for: background, frame, title, image, body copy, divider, footer, and FX overlays
+- Procedural-style CRT and grain controls (strength, opacity, scanline density, seed)
+- Preset system with built-ins and local persistence
+- JSON import/export of full configuration
+- Regenerate-in-place workflow on the active Dreamlog document
+- Validation and status reporting in panel UI
 
-```
-pip install -r requirements.txt
-```
+## Load the plugin
 
-## run
+1. Open **UXP Developer Tool**.
+2. Add `plugin/manifest.json`.
+3. Load plugin and open from **Plugins → Noisecore Dreamlog**.
 
-```
-python comfy_to_social.py -t "WEEK OF WONDERS" -b "body text here" -i photo.jpg --dreamlog 3
-```
+## Notes
 
-generates all four sizes by default: instagram square (1080×1080), portrait (1080×1350), reels (1080×1920), tiktok (1080×1920).
-
-## options
-
-| flag | description |
-|------|-------------|
-| `-t` | title |
-| `-b` | body text (`\n` for paragraph breaks) |
-| `-i` | photo to embed |
-| `--comfy-dir` | ComfyUI output folder — pulls latest image automatically |
-| `--dreamlog` | issue number (default: 1) |
-| `-o` | output directory (default: `noisecore/`) |
-| `--size` | single size: `instagram_square`, `instagram_portrait`, `instagram_reels`, `tiktok` |
-| `--preset` | filter intensity: `default`, `heavy`, `subtle` |
-| `--alt-lines` | comma-separated line indices to render in green |
-
-## test
-
-```
-python test_run.py
-```
-
-generates sample cards to `test_output/`. inspect them visually.
+- This code is designed for Photoshop UXP runtime; some functions can only be verified inside Photoshop.
+- Outside Photoshop, use syntax checks (`node --check`) for validation.
